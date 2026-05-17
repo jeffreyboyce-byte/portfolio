@@ -692,6 +692,7 @@ function wakeUp() {
 
 function goToSleep() {
   if (state === S.SLEEPING || state === S.WAKING) return;
+  if (isMobile && isRecording) { mediaRecorder && mediaRecorder.stop(); isRecording = false; }
   stopListening();
   stopAudio();
   clearTimeout(blinkTimer);
@@ -701,15 +702,20 @@ function goToSleep() {
 charHitbox.addEventListener('click', () => {
   if (state === S.SLEEPING) {
     wakeUp();
-    // Start recognition immediately inside this gesture event (critical for Android Chrome).
-    // On mobile this is the ONLY reliable way to call recognition.start().
-    if (recognition && !isListening) {
+    // Desktop: kick off the listen loop immediately inside the gesture
+    if (!isMobile && recognition && !isListening) {
       try { recognition.start(); isListening = true; } catch (_) {}
     }
-  } else if (state === S.AWAKE && isMobile) {
-    // Mobile tap-to-speak: start listening directly from this gesture
-    if (recognition && !isListening) {
-      try { recognition.start(); isListening = true; setState(S.LISTENING); } catch (_) {}
+  } else if (isMobile) {
+    // Mobile tap-to-speak state machine:
+    // AWAKE → start recording | LISTENING → stop & transcribe | anything else → sleep
+    if (state === S.AWAKE) {
+      mobileStartRecording();
+    } else if (state === S.LISTENING) {
+      mobileStopRecording();
+    } else if (state !== S.WAKING) {
+      if (isRecording) mobileStopRecording();
+      goToSleep();
     }
   } else if (state !== S.WAKING) {
     goToSleep();
@@ -827,80 +833,141 @@ async function synthesizeElevenLabs(text, voiceRef) {
 
 /* ══════════════════════════════════════════
    SPEECH RECOGNITION
+   Mobile  → MediaRecorder + ElevenLabs Scribe
+   Desktop → Web Speech API (auto-listen loop)
 ══════════════════════════════════════════ */
 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null, isListening = false;
 
 // Debug logger
 function dbg(msg) {
   const t = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const line = t + ' ' + msg + '\n';
   console.log('[SR]', msg);
-  debugPanel.textContent = line + debugPanel.textContent;
+  debugPanel.textContent = t + ' ' + msg + '\n' + debugPanel.textContent;
 }
 
-if (!SR) {
-  const warn = document.getElementById('browserWarn');
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  warn.textContent = isIOS
-    ? "Voice input isn't supported on iOS Safari. Try Chrome on Android or a desktop browser."
-    : 'Voice recognition needs Chrome or Edge.';
-  warn.style.display = 'block';
-  dbg('SR not available — ' + navigator.userAgent);
-} else {
-  dbg('SR available: ' + (window.SpeechRecognition ? 'native' : 'webkit'));
-}
+dbg('isMobile=' + isMobile);
 
-// On mobile we create a FRESH recognition object for every session.
-// Reusing one object across multiple start/stop cycles is unreliable on Android Chrome.
-function buildRecognition() {
-  if (!SR) return null;
-  const r = new SR();
-  r.continuous     = false;
-  r.interimResults = false;
-  r.lang           = 'en-US';
-  r.onaudiostart  = () => { dbg('audiostart'); };
-  r.onsoundstart  = () => { dbg('soundstart'); };
-  r.onspeechstart = () => { dbg('speechstart'); stage.classList.add('speech-active'); };
-  r.onspeechend   = () => { dbg('speechend');   stage.classList.remove('speech-active'); };
-  r.onsoundend    = () => { dbg('soundend'); };
-  r.onaudioend    = () => { dbg('audioend'); };
-  r.onresult = (e) => {
-    const transcript = e.results[e.results.length - 1][0].transcript;
-    dbg('result: "' + transcript + '"');
-    stopListening();
-    processQuery(transcript);
-  };
-  r.onerror = (e) => {
-    dbg('error: ' + e.error);
-    isListening = false;
+/* ── MOBILE: MediaRecorder → ElevenLabs Scribe ── */
+let mediaRecorder = null;
+let audioChunks   = [];
+let isRecording   = false;
+
+async function mobileStartRecording() {
+  if (isRecording) return;
+  dbg('getUserMedia...');
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    dbg('getUserMedia error: ' + err.message);
+    setState(S.AWAKE);
+    return;
+  }
+  dbg('stream OK, starting MediaRecorder');
+  audioChunks = [];
+  // Pick best supported mime type
+  const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']
+    .find(t => MediaRecorder.isTypeSupported(t)) || '';
+  dbg('mime: ' + (mime || 'default'));
+  mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    isRecording = false;
     stage.classList.remove('speech-active');
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      const warn = document.getElementById('browserWarn');
-      warn.textContent = 'Microphone access denied — tap the lock icon in the address bar → Site settings → Microphone → Allow, then refresh.';
-      warn.style.display = 'block';
-      return;
+    if (state !== S.LISTENING) return; // aborted (went to sleep)
+    setState(S.THINKING);
+    const blob = new Blob(audioChunks, { type: mime || 'audio/webm' });
+    dbg('blob size: ' + blob.size + ' bytes');
+    try {
+      const transcript = await transcribeScribe(blob, mime);
+      dbg('transcript: "' + transcript + '"');
+      if (transcript && transcript.trim()) {
+        processQuery(transcript.trim());
+      } else {
+        dbg('empty transcript — back to awake');
+        setState(S.AWAKE);
+      }
+    } catch (err) {
+      dbg('scribe error: ' + err.message);
+      setState(S.AWAKE);
     }
-    if (state === S.LISTENING || state === S.WAKING) setState(S.AWAKE);
-    if (!isMobile && state === S.AWAKE) scheduleRestart();
   };
-  r.onend = () => {
-    dbg('end (state=' + state + ')');
-    isListening = false;
-    stage.classList.remove('speech-active');
-    if (isMobile) {
-      // Mobile: return to AWAKE and wait for next tap
+  mediaRecorder.start();
+  isRecording = true;
+  setState(S.LISTENING);
+  stage.classList.add('speech-active');
+  dbg('recording...');
+}
+
+function mobileStopRecording() {
+  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+  dbg('stopping recorder');
+  mediaRecorder.stop();
+}
+
+async function transcribeScribe(blob, mime) {
+  const form = new FormData();
+  // ElevenLabs Scribe expects the field name "file"
+  const ext  = (mime || '').includes('mp4') ? 'mp4' : (mime || '').includes('ogg') ? 'ogg' : 'webm';
+  form.append('file', blob, 'recording.' + ext);
+  form.append('model_id', 'scribe_v1');
+  dbg('posting to Scribe...');
+  const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+    method:  'POST',
+    headers: { 'xi-api-key': EL_API_KEY },
+    body:    form,
+  });
+  dbg('scribe status: ' + res.status);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error('Scribe ' + res.status + ': ' + body.slice(0, 120));
+  }
+  const data = await res.json();
+  return data.text || '';
+}
+
+/* ── DESKTOP: Web Speech API auto-listen loop ── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null, isListening = false;
+
+if (!isMobile) {
+  if (!SR) {
+    const warn = document.getElementById('browserWarn');
+    warn.textContent = 'Voice recognition needs Chrome or Edge.';
+    warn.style.display = 'block';
+  } else {
+    dbg('SR: ' + (window.SpeechRecognition ? 'native' : 'webkit'));
+    recognition = new SR();
+    recognition.continuous     = false;
+    recognition.interimResults = false;
+    recognition.lang           = 'en-US';
+    recognition.onspeechstart = () => stage.classList.add('speech-active');
+    recognition.onspeechend   = () => stage.classList.remove('speech-active');
+    recognition.onresult = (e) => {
+      const transcript = e.results[e.results.length - 1][0].transcript;
+      stopListening();
+      processQuery(transcript);
+    };
+    recognition.onerror = (e) => {
+      isListening = false;
+      stage.classList.remove('speech-active');
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        const warn = document.getElementById('browserWarn');
+        warn.textContent = 'Microphone access denied — allow mic access and refresh.';
+        warn.style.display = 'block';
+        return;
+      }
       if (state === S.LISTENING) setState(S.AWAKE);
-      return;
-    }
-    // Desktop: keep mic loop alive
-    if (state === S.AWAKE || state === S.LISTENING) scheduleRestart();
-  };
-  return r;
+      if (state === S.AWAKE) scheduleRestart();
+    };
+    recognition.onend = () => {
+      isListening = false;
+      stage.classList.remove('speech-active');
+      if (state === S.AWAKE || state === S.LISTENING) scheduleRestart();
+    };
+  }
 }
-
-if (SR) recognition = buildRecognition();
 
 let restartTimer = null;
 function scheduleRestart() {
@@ -909,19 +976,15 @@ function scheduleRestart() {
 }
 
 function startListening() {
-  if (!SR || isListening) return;
-  if (state !== S.AWAKE && state !== S.WAKING) return;
-  // On mobile, always build a fresh object to avoid Android stale-object issues
-  if (isMobile) recognition = buildRecognition();
+  if (!recognition || isListening) return;
+  if (state !== S.AWAKE) return;
   isListening = true;
-  dbg('start() called (state=' + state + ')');
   try {
     recognition.start();
     setState(S.LISTENING);
   } catch (e) {
-    dbg('start() threw: ' + e.message);
     isListening = false;
-    if (!isMobile) scheduleRestart();
+    scheduleRestart();
   }
 }
 
