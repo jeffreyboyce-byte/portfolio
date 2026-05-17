@@ -417,7 +417,6 @@
   <!-- Cursor-following tooltip -->
   <div id="cursorTip"></div>
 
-  <!-- debugPanel injected by JS -->
 
   <!-- Voice UI -->
   <div id="voiceUI">
@@ -431,23 +430,8 @@
 <div id="browserWarn">Voice recognition needs Chrome or Edge.</div>
 
 <script>
-// Create debug panel as a direct child of <body> to avoid overflow:hidden clipping
-const debugPanel = (function() {
-  const el = document.createElement('div');
-  el.id = 'debugPanel';
-  el.setAttribute('style', [
-    'position:fixed','bottom:0','left:0','right:0',
-    'background:#000','color:#0f0',
-    'font-family:monospace','font-size:14px','line-height:1.4',
-    'padding:10px 12px','z-index:2147483647',
-    'max-height:220px','overflow-y:auto',
-    'white-space:pre-wrap','word-break:break-all',
-    'pointer-events:none'
-  ].join(';'));
-  el.textContent = 'DEBUG PANEL READY\n';
-  document.body.appendChild(el);
-  return el;
-})();
+// Debug panel placeholder (disabled)
+const debugPanel = { textContent: '' };
 
 /* ══════════════════════════════════════════
    FIGMA LAYOUT CONSTANTS
