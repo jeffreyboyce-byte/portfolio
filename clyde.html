@@ -673,8 +673,16 @@ function goToSleep() {
 }
 
 charHitbox.addEventListener('click', () => {
-  if (state === S.SLEEPING) wakeUp();
-  else if (state !== S.WAKING) goToSleep();
+  if (state === S.SLEEPING) {
+    wakeUp();
+    // Android Chrome requires recognition.start() to be called directly
+    // from a user gesture — not via setTimeout chains. Kick it off now.
+    if (recognition && !isListening) {
+      try { recognition.start(); isListening = true; } catch (_) {}
+    }
+  } else if (state !== S.WAKING) {
+    goToSleep();
+  }
 });
 charHitbox.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -814,9 +822,16 @@ if (!SR) {
     processQuery(transcript);
   };
   recognition.onerror = (e) => {
+    console.warn('[SR error]', e.error);
     isListening = false;
     stage.classList.remove('speech-active');
-    if (state === S.LISTENING) setState(S.AWAKE);
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      const warn = document.getElementById('browserWarn');
+      warn.textContent = 'Microphone access denied — tap the lock icon in the address bar and allow the microphone, then refresh.';
+      warn.style.display = 'block';
+      return;
+    }
+    if (state === S.LISTENING || state === S.WAKING) setState(S.AWAKE);
     if (state === S.AWAKE) scheduleRestart();
   };
   recognition.onend = () => {
@@ -835,7 +850,7 @@ function scheduleRestart() {
 
 function startListening() {
   if (!recognition || isListening) return;
-  if (state !== S.AWAKE) return;
+  if (state !== S.AWAKE && state !== S.WAKING) return;
   isListening = true;
   try {
     recognition.start();
@@ -884,6 +899,7 @@ async function playAudioSrcs(srcs, sleepAfter) {
     currentAudio = null;
   }
   if (sleepAfter) { goToSleep(); return; }
+  if (state === S.SLEEPING) return; // interrupted mid-playback
   setState(S.AWAKE);
   setTimeout(scheduleRestart, 400); // extra gap so mic is clear after audio
 }
@@ -892,6 +908,8 @@ async function processQuery(text) {
   setState(S.THINKING);
   try {
     const { text: reply, audioSrcs, voiceRef } = await queryVoiceflow(text);
+    // If Clyde was put to sleep while the API call was in flight, bail out silently
+    if (state === S.SLEEPING) return;
     const sleep = ['bye','goodbye','sleep','go back to sleep','later']
                     .some(w => text.toLowerCase().includes(w));
     if (audioSrcs.length > 0) {
@@ -906,7 +924,10 @@ async function processQuery(text) {
     }
   } catch (err) {
     console.error('Voiceflow/ElevenLabs error:', err);
-    speak("Something went wrong — try again in a moment.");
+    // Only surface the error if Clyde wasn't deliberately put to sleep
+    if (state !== S.SLEEPING) {
+      speak("Something went wrong — try again in a moment.");
+    }
   }
 }
 
