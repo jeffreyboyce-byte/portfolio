@@ -555,6 +555,12 @@ function layoutOverlays() {
 layoutOverlays();
 window.addEventListener('resize', layoutOverlays);
 
+// On mobile, update the awake hint to reflect tap-to-speak model
+if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+  const awakeHintEl = document.getElementById('awakeHint');
+  if (awakeHintEl) awakeHintEl.textContent = 'tap clyde to speak';
+}
+
 /* ══════════════════════════════════════════
    WAVEFORM BARS
 ══════════════════════════════════════════ */
@@ -675,10 +681,15 @@ function goToSleep() {
 charHitbox.addEventListener('click', () => {
   if (state === S.SLEEPING) {
     wakeUp();
-    // Android Chrome requires recognition.start() to be called directly
-    // from a user gesture — not via setTimeout chains. Kick it off now.
+    // Start recognition immediately inside this gesture event (critical for Android Chrome).
+    // On mobile this is the ONLY reliable way to call recognition.start().
     if (recognition && !isListening) {
       try { recognition.start(); isListening = true; } catch (_) {}
+    }
+  } else if (state === S.AWAKE && isMobile) {
+    // Mobile tap-to-speak: start listening directly from this gesture
+    if (recognition && !isListening) {
+      try { recognition.start(); isListening = true; setState(S.LISTENING); } catch (_) {}
     }
   } else if (state !== S.WAKING) {
     goToSleep();
@@ -797,6 +808,10 @@ async function synthesizeElevenLabs(text, voiceRef) {
 /* ══════════════════════════════════════════
    SPEECH RECOGNITION  —  always-on when awake
 ══════════════════════════════════════════ */
+// On mobile, Android Chrome blocks recognition.start() from setTimeout chains.
+// We use explicit tap-to-speak instead of the auto-restart loop.
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null, isListening = false;
 
@@ -837,7 +852,12 @@ if (!SR) {
   recognition.onend = () => {
     isListening = false;
     stage.classList.remove('speech-active');
-    // Keep the mic loop alive while awake
+    if (isMobile) {
+      // Mobile: return to AWAKE (waiting for next tap) instead of looping
+      if (state === S.LISTENING) setState(S.AWAKE);
+      return;
+    }
+    // Desktop: keep the mic loop alive while awake
     if (state === S.AWAKE || state === S.LISTENING) scheduleRestart();
   };
 }
