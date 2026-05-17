@@ -417,6 +417,9 @@
   <!-- Cursor-following tooltip -->
   <div id="cursorTip"></div>
 
+  <!-- Mobile debug overlay — remove once speech is confirmed working -->
+  <div id="debugPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:9999;max-height:180px;overflow-y:auto;white-space:pre-wrap;"></div>
+
   <!-- Voice UI -->
   <div id="voiceUI">
     <div id="thinkDots">
@@ -806,61 +809,83 @@ async function synthesizeElevenLabs(text, voiceRef) {
 }
 
 /* ══════════════════════════════════════════
-   SPEECH RECOGNITION  —  always-on when awake
+   SPEECH RECOGNITION
 ══════════════════════════════════════════ */
-// On mobile, Android Chrome blocks recognition.start() from setTimeout chains.
-// We use explicit tap-to-speak instead of the auto-restart loop.
 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null, isListening = false;
+
+// Debug logger — visible panel on mobile, console on desktop
+const debugPanel = document.getElementById('debugPanel');
+if (isMobile) debugPanel.style.display = 'block';
+function dbg(msg) {
+  const t = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const line = t + ' ' + msg + '\n';
+  console.log('[SR]', msg);
+  if (isMobile) { debugPanel.textContent = line + debugPanel.textContent; }
+}
 
 if (!SR) {
   const warn = document.getElementById('browserWarn');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   warn.textContent = isIOS
-    ? 'Voice input isn\'t supported on iOS Safari. Try Chrome on Android or a desktop browser.'
+    ? "Voice input isn't supported on iOS Safari. Try Chrome on Android or a desktop browser."
     : 'Voice recognition needs Chrome or Edge.';
   warn.style.display = 'block';
+  dbg('SR not available — ' + navigator.userAgent);
 } else {
-  recognition = new SR();
-  recognition.continuous     = false;
-  recognition.interimResults = false;
-  recognition.lang           = 'en-US';
+  dbg('SR available: ' + (window.SpeechRecognition ? 'native' : 'webkit'));
+}
 
-  recognition.onspeechstart = () => stage.classList.add('speech-active');
-  recognition.onspeechend   = () => stage.classList.remove('speech-active');
-
-  recognition.onresult = (e) => {
+// On mobile we create a FRESH recognition object for every session.
+// Reusing one object across multiple start/stop cycles is unreliable on Android Chrome.
+function buildRecognition() {
+  if (!SR) return null;
+  const r = new SR();
+  r.continuous     = false;
+  r.interimResults = false;
+  r.lang           = 'en-US';
+  r.onaudiostart  = () => { dbg('audiostart'); };
+  r.onsoundstart  = () => { dbg('soundstart'); };
+  r.onspeechstart = () => { dbg('speechstart'); stage.classList.add('speech-active'); };
+  r.onspeechend   = () => { dbg('speechend');   stage.classList.remove('speech-active'); };
+  r.onsoundend    = () => { dbg('soundend'); };
+  r.onaudioend    = () => { dbg('audioend'); };
+  r.onresult = (e) => {
     const transcript = e.results[e.results.length - 1][0].transcript;
+    dbg('result: "' + transcript + '"');
     stopListening();
     processQuery(transcript);
   };
-  recognition.onerror = (e) => {
-    console.warn('[SR error]', e.error);
+  r.onerror = (e) => {
+    dbg('error: ' + e.error);
     isListening = false;
     stage.classList.remove('speech-active');
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       const warn = document.getElementById('browserWarn');
-      warn.textContent = 'Microphone access denied — tap the lock icon in the address bar and allow the microphone, then refresh.';
+      warn.textContent = 'Microphone access denied — tap the lock icon in the address bar → Site settings → Microphone → Allow, then refresh.';
       warn.style.display = 'block';
       return;
     }
     if (state === S.LISTENING || state === S.WAKING) setState(S.AWAKE);
-    if (state === S.AWAKE) scheduleRestart();
+    if (!isMobile && state === S.AWAKE) scheduleRestart();
   };
-  recognition.onend = () => {
+  r.onend = () => {
+    dbg('end (state=' + state + ')');
     isListening = false;
     stage.classList.remove('speech-active');
     if (isMobile) {
-      // Mobile: return to AWAKE (waiting for next tap) instead of looping
+      // Mobile: return to AWAKE and wait for next tap
       if (state === S.LISTENING) setState(S.AWAKE);
       return;
     }
-    // Desktop: keep the mic loop alive while awake
+    // Desktop: keep mic loop alive
     if (state === S.AWAKE || state === S.LISTENING) scheduleRestart();
   };
+  return r;
 }
+
+if (SR) recognition = buildRecognition();
 
 let restartTimer = null;
 function scheduleRestart() {
@@ -869,16 +894,19 @@ function scheduleRestart() {
 }
 
 function startListening() {
-  if (!recognition || isListening) return;
+  if (!SR || isListening) return;
   if (state !== S.AWAKE && state !== S.WAKING) return;
+  // On mobile, always build a fresh object to avoid Android stale-object issues
+  if (isMobile) recognition = buildRecognition();
   isListening = true;
+  dbg('start() called (state=' + state + ')');
   try {
     recognition.start();
     setState(S.LISTENING);
   } catch (e) {
-    // Recognizer still cleaning up — retry shortly
+    dbg('start() threw: ' + e.message);
     isListening = false;
-    scheduleRestart();
+    if (!isMobile) scheduleRestart();
   }
 }
 
