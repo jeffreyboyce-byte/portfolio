@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clyde — Jeffrey Boyce</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --coral:   #d97757;
+      --coral10: rgba(217,119,87,0.10);
+      --coral25: rgba(217,119,87,0.25);
+      --coral55: rgba(217,119,87,0.55);
+      --bg:      #1f1f1e;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    }
+
+    #stage {
+      position: relative;
+      width: 100vw; height: 100vh;
+    }
+
+    /* ─────────────────────────────────────────────
+       NAME — purely stationary, zero animation
+       Container + three child layers
+    ───────────────────────────────────────────── */
+    #charName {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      /* left / top / width / height set by JS */
+    }
+
+
+    /* ─────────────────────────────────────────────
+       CHARACTER WRAPPER — the ONLY thing that moves
+       Contains body + both disguises.
+       Name is NOT inside here.
+    ───────────────────────────────────────────── */
+    #charWrapper {
+      position: absolute;
+      transform-origin: center center;
+      /* left / top / width / height set by JS */
+    }
+
+    /* Sunburst body fills the wrapper */
+    #charBody {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ─────────────────────────────────────────────
+       DISGUISE — two variants that cross-fade on wake/sleep.
+       disguiseSleep (45:77): closed-eye curves baked into lenses.
+       disguiseAwake (45:60): open empty lenses.
+    ───────────────────────────────────────────── */
+    #disguiseSleep, #disguiseAwake {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+      transition: opacity 0.45s ease;
+      /* left / top / width / height set by JS */
+    }
+
+    /* Sleeping disguise: visible by default, fades out on wake */
+    #disguiseSleep { opacity: 1; }
+    #stage.waking    #disguiseSleep,
+    #stage.awake     #disguiseSleep,
+    #stage.listening #disguiseSleep,
+    #stage.thinking  #disguiseSleep,
+    #stage.speaking  #disguiseSleep { opacity: 0; }
+
+    /* Awake disguise: hidden by default, fades in on wake */
+    #disguiseAwake { opacity: 0; }
+    #stage.waking    #disguiseAwake,
+    #stage.awake     #disguiseAwake,
+    #stage.listening #disguiseAwake,
+    #stage.thinking  #disguiseAwake,
+    #stage.speaking  #disguiseAwake { opacity: 1; }
+
+    /* ─────────────────────────────────────────────
+       OPEN EYES — 46×9 strip, shown when awake only
+    ───────────────────────────────────────────── */
+    #eyesOpen {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+      /* left / top / width / height set by JS */
+    }
+    #stage.waking    #eyesOpen,
+    #stage.awake     #eyesOpen,
+    #stage.listening #eyesOpen,
+    #stage.thinking  #eyesOpen,
+    #stage.speaking  #eyesOpen { opacity: 1; }
+
+    /* ─────────────────────────────────────────────
+       CHARACTER ANIMATIONS (wrapper only)
+    ───────────────────────────────────────────── */
+
+    /* Sleeping — gentle float */
+    #stage.sleeping #charWrapper {
+      animation: anim-float 4s ease-in-out infinite;
+    }
+    @keyframes anim-float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-9px); }
+    }
+
+    /* Wake pop */
+    #stage.waking #charWrapper {
+      animation: anim-wake 0.55s cubic-bezier(0.34,1.45,0.64,1) forwards;
+    }
+    @keyframes anim-wake {
+      0%   { transform: scale(0.92) translateY(8px); }
+      100% { transform: scale(1)    translateY(0px); }
+    }
+
+    /* Awake idle */
+    #stage.awake:not(.listening):not(.thinking):not(.speaking) #charWrapper {
+      animation: anim-idle 6s ease-in-out infinite;
+    }
+    @keyframes anim-idle {
+      0%   { transform: translateY(0px)   rotate(0deg)    scale(1.000); }
+      20%  { transform: translateY(-7px)  rotate(1.2deg)  scale(1.010); }
+      50%  { transform: translateY(-13px) rotate(0deg)    scale(1.015); }
+      80%  { transform: translateY(-7px)  rotate(-1.2deg) scale(1.010); }
+      100% { transform: translateY(0px)   rotate(0deg)    scale(1.000); }
+    }
+
+    /* Listening — alert, perking up */
+    #stage.listening #charWrapper {
+      animation: anim-listen 1.6s ease-in-out infinite;
+    }
+    @keyframes anim-listen {
+      0%, 100% { transform: translateY(0px)  rotate(0deg)    scale(1.000); }
+      40%      { transform: translateY(-8px) rotate(1.0deg)  scale(1.014); }
+      70%      { transform: translateY(-5px) rotate(-0.6deg) scale(1.008); }
+    }
+
+    /* Thinking — contemplative sway */
+    #stage.thinking #charWrapper {
+      animation: anim-think 3s ease-in-out infinite;
+    }
+    @keyframes anim-think {
+      0%, 100% { transform: rotate(0deg)    translateY(0px)  scale(1.000); }
+      30%      { transform: rotate(2.5deg)  translateY(-5px) scale(1.008); }
+      70%      { transform: rotate(-2.0deg) translateY(-7px) scale(1.010); }
+    }
+
+    /* Speaking — rhythmic bob */
+    #stage.speaking #charWrapper {
+      animation: anim-speak 0.42s ease-in-out infinite alternate;
+    }
+    @keyframes anim-speak {
+      0%   { transform: scale(1.000) translateY(0px)  rotate(0deg);   }
+      100% { transform: scale(1.016) translateY(-5px) rotate(0.3deg); }
+    }
+
+    /* ─────────────────────────────────────────────
+       ZZZ  (container positioned by JS)
+    ───────────────────────────────────────────── */
+    #zzzWrap {
+      position: absolute;
+      pointer-events: none;
+      z-index: 15;
+      transition: opacity 0.4s ease;
+    }
+    #stage.waking    #zzzWrap,
+    #stage.awake     #zzzWrap,
+    #stage.listening #zzzWrap,
+    #stage.thinking  #zzzWrap,
+    #stage.speaking  #zzzWrap { opacity: 0; pointer-events: none; }
+
+    .z {
+      position: absolute;
+      font-family: 'Georgia', serif;
+      font-style: italic;
+      font-weight: 700;
+      color: var(--coral);
+      opacity: 0;
+      text-shadow: 0 0 14px rgba(217,119,87,0.35);
+      animation: zzz-rise 3.6s ease-in-out infinite;
+      line-height: 1;
+    }
+    .z:nth-child(1) { font-size: 14px; left:  0px; top:  24px; animation-delay: 0s;    }
+    .z:nth-child(2) { font-size: 20px; left: 16px; top:   6px; animation-delay: 1.2s; }
+    .z:nth-child(3) { font-size: 26px; left: 38px; top: -12px; animation-delay: 2.4s; }
+
+    @keyframes zzz-rise {
+      0%   { opacity: 0;    transform: translate(0px,   0px)  scale(0.8); }
+      18%  { opacity: 0.9;  }
+      82%  { opacity: 0.55; }
+      100% { opacity: 0;    transform: translate(12px,-46px)  scale(1.1); }
+    }
+
+    /* ─────────────────────────────────────────────
+       LISTEN RINGS  (container positioned by JS)
+    ───────────────────────────────────────────── */
+    #listenRings {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .lring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--coral);
+      transform: translate(-50%, -50%) scale(0.85);
+      opacity: 0;
+    }
+    #stage.listening .lring { animation: ring-out 2.2s ease-out infinite; }
+    #stage.listening .lring:nth-child(1) { animation-delay: 0s;    }
+    #stage.listening .lring:nth-child(2) { animation-delay: 0.6s;  }
+    #stage.listening .lring:nth-child(3) { animation-delay: 1.2s;  }
+
+    @keyframes ring-out {
+      0%   { opacity: 0.65; transform: translate(-50%,-50%) scale(0.85); }
+      100% { opacity: 0;    transform: translate(-50%,-50%) scale(1.40); }
+    }
+
+    /* ─────────────────────────────────────────────
+       HITBOX  (positioned by JS)
+    ───────────────────────────────────────────── */
+    #charHitbox {
+      position: absolute;
+      border-radius: 50%;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg filter='drop-shadow(0 1px 2px rgba(0,0,0,0.45))'%3E%3Cpath fill='%23ffffff' stroke='%23222' stroke-width='1.4' stroke-linejoin='round' d='M16 2a3.5 3.5 0 0 1 3.5 3.5V18a4 4 0 0 1 1.8-.9 3.3 3.3 0 0 1 3.5 2 3.3 3.3 0 0 1 3-.8 3.2 3.2 0 0 1 2.6 2 3.2 3.2 0 0 1 2.6 3.2v4.8C33 34.8 28.8 40 22.5 40h-2C14.2 40 10 35.4 10 29v-8.5a3.5 3.5 0 0 1 2.5-3.36V5.5A3.5 3.5 0 0 1 16 2z'/%3E%3C/g%3E%3C/svg%3E") 16 2, pointer;
+      z-index: 20;
+    }
+    #stage.sleeping #charHitbox:hover { filter: brightness(1.08); }
+
+    /* ─────────────────────────────────────────────
+       VOICE UI  (JS-positioned between name and hint)
+    ───────────────────────────────────────────── */
+    #voiceUI {
+      position: absolute;
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      z-index: 30;
+      transform-origin: top center;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.45s ease 0.15s, transform 0.45s ease 0.15s;
+      pointer-events: none;
+    }
+    #stage.awake     #voiceUI,
+    #stage.listening #voiceUI,
+    #stage.thinking  #voiceUI,
+    #stage.speaking  #voiceUI {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    #thinkDots { display: flex; gap: 5px; opacity: 0; transition: opacity 0.25s; }
+    #stage.thinking #thinkDots { opacity: 1; }
+    .tdot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--coral);
+      animation: tdot 1s ease-in-out infinite;
+    }
+    .tdot:nth-child(2) { animation-delay: 0.2s; }
+    .tdot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdot {
+      0%,80%,100% { transform: scale(0.7); opacity: 0.4; }
+      40%          { transform: scale(1.2); opacity: 1;   }
+    }
+
+    #waveform { display: flex; align-items: center; gap: 4px; height: 60px; }
+    .wbar {
+      width: 4px; height: 5px; background: var(--coral); border-radius: 3px;
+      transform-origin: center;
+    }
+    #stage.speech-active .wbar,
+    #stage.speaking      .wbar { animation: wbar var(--spd) ease-in-out infinite alternate; }
+
+    @keyframes wbar {
+      0%   { height: 5px;         opacity: 0.5; }
+      60%  { height: calc(var(--h) * 0.7); opacity: 0.9; }
+      100% { height: var(--h);    opacity: 1;   }
+    }
+
+    /* Each bar: --h = peak height, --spd = speed, animation-delay for stagger */
+    .wbar:nth-child(1)  { --h: 18px; --spd: 0.54s; animation-delay: -0.12s; }
+    .wbar:nth-child(2)  { --h: 42px; --spd: 0.41s; animation-delay: -0.33s; }
+    .wbar:nth-child(3)  { --h: 30px; --spd: 0.68s; animation-delay: -0.07s; }
+    .wbar:nth-child(4)  { --h: 54px; --spd: 0.38s; animation-delay: -0.51s; }
+    .wbar:nth-child(5)  { --h: 36px; --spd: 0.58s; animation-delay: -0.22s; }
+    .wbar:nth-child(6)  { --h: 60px; --spd: 0.34s; animation-delay: -0.44s; }
+    .wbar:nth-child(7)  { --h: 32px; --spd: 0.62s; animation-delay: -0.16s; }
+    .wbar:nth-child(8)  { --h: 50px; --spd: 0.43s; animation-delay: -0.38s; }
+    .wbar:nth-child(9)  { --h: 24px; --spd: 0.71s; animation-delay: -0.09s; }
+    .wbar:nth-child(10) { --h: 44px; --spd: 0.37s; animation-delay: -0.27s; }
+    .wbar:nth-child(11) { --h: 14px; --spd: 0.56s; animation-delay: -0.18s; }
+
+
+    /* Shared hint styling */
+    #sleepHint, #awakeHint {
+      position: absolute;
+      bottom: clamp(24px, 5vh, 56px); left: 0; right: 0;
+      text-align: center;
+      color: rgba(255,255,255,0.20);
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      z-index: 25; transition: opacity 0.4s;
+    }
+
+    /* "tap to wake" — only during sleeping */
+    #stage.waking    #sleepHint,
+    #stage.awake     #sleepHint,
+    #stage.listening #sleepHint,
+    #stage.thinking  #sleepHint,
+    #stage.speaking  #sleepHint { opacity: 0; pointer-events: none; }
+
+    /* "tap to sleep" — only during idle awake */
+    #awakeHint {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #stage.awake #awakeHint { opacity: 1; pointer-events: auto; }
+
+    /* Browser warning */
+    #browserWarn {
+      display: none; position: fixed;
+      bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(217,119,87,0.12);
+      border: 1px solid var(--coral25); border-radius: 10px;
+      color: rgba(255,255,255,0.6); font-size: 12px;
+      padding: 9px 18px; white-space: nowrap; z-index: 100;
+    }
+  </style>
+</head>
+<body>
+<div id="stage" class="sleeping">
+
+  <!-- Name: stationary, NEVER animates. Single vectorized Figma asset (45:65). -->
+  <img id="charName"
+       src="https://www.figma.com/api/mcp/asset/4206be20-d169-498e-aeab-7123d014af98"
+       alt="Clyde" draggable="false" />
+
+  <!-- Character wrapper: the ONLY animated element -->
+  <div id="charWrapper">
+    <!-- 45:72 Sunburst body — fills wrapper -->
+    <img id="charBody"
+         src="https://www.figma.com/api/mcp/asset/a75789b4-af59-49bc-8fee-699f0132090d"
+         alt="" draggable="false" />
+    <!-- 45:77 Sleeping disguise — closed-eye curves baked into lenses -->
+    <img id="disguiseSleep"
+         src="https://www.figma.com/api/mcp/asset/fc2da154-e3a1-4aa0-9a7b-2984905d3fe9"
+         alt="" draggable="false" />
+    <!-- 45:60 Awake disguise — open empty lenses (eyes are a separate layer) -->
+    <img id="disguiseAwake"
+         src="https://www.figma.com/api/mcp/asset/828e96f6-a18e-484e-b7c0-e892c3eee2ac"
+         alt="" draggable="false" />
+    <!-- 49:99 Open eyes — 46×9 strip, shown when awake -->
+    <img id="eyesOpen"
+         src="https://www.figma.com/api/mcp/asset/d8fdd08f-b817-4b28-934a-5509c28bb87e"
+         alt="" draggable="false" />
+  </div>
+
+  <!-- Rings, ZZZ, hitbox -->
+  <div id="listenRings">
+    <div class="lring"></div>
+    <div class="lring"></div>
+    <div class="lring"></div>
+  </div>
+
+  <div id="zzzWrap">
+    <span class="z">z</span>
+    <span class="z">z</span>
+    <span class="z">Z</span>
+  </div>
+
+  <div id="charHitbox" role="button" tabindex="0" aria-label="Wake up Clyde"></div>
+
+  <div id="sleepHint">tap to wake</div>
+  <div id="awakeHint">tap to sleep</div>
+
+  <!-- Voice UI -->
+  <div id="voiceUI">
+    <div id="thinkDots">
+      <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+    </div>
+    <div id="waveform"></div>
+  </div>
+
+</div>
+<div id="browserWarn">Voice recognition needs Chrome or Edge.</div>
+
+<script>
+/* ══════════════════════════════════════════
+   FIGMA LAYOUT CONSTANTS
+   Frame: 1200 × 800  (node 49:97)
+   All positions are in Figma canvas units.
+══════════════════════════════════════════ */
+const IMG_W = 1200, IMG_H = 800;
+
+// Sunburst body (44:24)
+const CHAR_X = 515, CHAR_Y = 319, CHAR_W = 161, CHAR_H = 161;
+
+// Disguise frame (45:60) — glasses, nose, mustache
+const DISG_X = 551, DISG_Y = 368, DISG_W = 90,   DISG_H = 77.7;
+
+// Eyes Open (49:99) — relative offset from charWrapper origin
+const EYES_DX = 57, EYES_DY = 67, EYES_W = 46, EYES_H = 9;
+
+
+// Name group (45:65) — single vectorized image
+const NAME_X = 491.31, NAME_Y = 498, NAME_W = 210.25, NAME_H = 81.37;
+
+/* ══════════════════════════════════════════
+   DOM REFS
+══════════════════════════════════════════ */
+const stage         = document.getElementById('stage');
+const charWrapper   = document.getElementById('charWrapper');
+const charBody      = document.getElementById('charBody');
+const disguiseSleep = document.getElementById('disguiseSleep');
+const disguiseAwake = document.getElementById('disguiseAwake');
+const eyesOpen      = document.getElementById('eyesOpen');
+const charNameEl    = document.getElementById('charName');
+const zzzWrap       = document.getElementById('zzzWrap');
+const listenRings   = document.getElementById('listenRings');
+const charHitbox    = document.getElementById('charHitbox');
+const voiceUI       = document.getElementById('voiceUI');
+
+/* ══════════════════════════════════════════
+   LAYOUT  —  Figma coords → viewport px
+══════════════════════════════════════════ */
+function layoutOverlays() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const scale = Math.min(vw / IMG_W, vh / IMG_H);
+  const rendW = IMG_W * scale, rendH = IMG_H * scale;
+  const offX  = (vw - rendW) / 2;
+  const offY  = (vh - rendH) / 2;
+
+  // ── Character wrapper = sunburst bounding box ─────────────────
+  const wL = offX + CHAR_X * scale;
+  const wT = offY + CHAR_Y * scale;
+  const wW = CHAR_W * scale;
+  const wH = CHAR_H * scale;
+  Object.assign(charWrapper.style, {
+    left: wL + 'px', top: wT + 'px',
+    width: wW + 'px', height: wH + 'px',
+  });
+
+  // ── Disguise variants — same position, different images ───────
+  const dL = (DISG_X - CHAR_X) * scale;
+  const dT = (DISG_Y - CHAR_Y) * scale;
+  const dStyles = { left: dL + 'px', top: dT + 'px', width: DISG_W * scale + 'px', height: DISG_H * scale + 'px' };
+  Object.assign(disguiseSleep.style, dStyles);
+  Object.assign(disguiseAwake.style, dStyles);
+
+  // ── Eyes Open (49:99) — relative to wrapper top-left ──────────
+  Object.assign(eyesOpen.style, {
+    left:   EYES_DX * scale + 'px',
+    top:    EYES_DY * scale + 'px',
+    width:  EYES_W  * scale + 'px',
+    height: EYES_H  * scale + 'px',
+  });
+
+  // ── Name (45:65) — single vectorized image, stationary ────────
+  Object.assign(charNameEl.style, {
+    left:   (offX + NAME_X * scale) + 'px',
+    top:    (offY + NAME_Y * scale) + 'px',
+    width:  NAME_W * scale + 'px',
+    height: NAME_H * scale + 'px',
+  });
+
+  // ── Voice UI — centred in gap between name bottom and hint text ─
+  // Figma: name bottom ≈ y=579, hint text ≈ y=686 → midpoint ≈ 632
+  const vuY = offY + 632 * scale;
+  voiceUI.style.top = vuY + 'px';
+
+  // ── Character centre (for hitbox / rings / ZZZ) ───────────────
+  const cx = wL + wW / 2;
+  const cy = wT + wH / 2;
+
+  // ZZZ: upper-right of character
+  zzzWrap.style.left = (cx + wW * 0.28) + 'px';
+  zzzWrap.style.top  = (cy - wH * 0.55) + 'px';
+
+  // Listen rings
+  listenRings.style.left = cx + 'px';
+  listenRings.style.top  = cy + 'px';
+  const rb   = wW * 1.15;
+  const rEls = listenRings.querySelectorAll('.lring');
+  rEls[0].style.width = rEls[0].style.height = (rb * 1.00) + 'px';
+  rEls[1].style.width = rEls[1].style.height = (rb * 1.35) + 'px';
+  rEls[2].style.width = rEls[2].style.height = (rb * 1.70) + 'px';
+
+  // Hitbox
+  const hs = wW * 1.2;
+  Object.assign(charHitbox.style, {
+    left: (cx - hs / 2) + 'px', top: (cy - hs / 2) + 'px',
+    width: hs + 'px', height: hs + 'px',
+  });
+}
+
+layoutOverlays();
+window.addEventListener('resize', layoutOverlays);
+
+/* ══════════════════════════════════════════
+   WAVEFORM BARS
+══════════════════════════════════════════ */
+const waveformEl = document.getElementById('waveform');
+for (let i = 0; i < 11; i++) {
+  const b = document.createElement('div');
+  b.className = 'wbar';
+  waveformEl.appendChild(b);
+}
+
+/* ══════════════════════════════════════════
+   STATE MACHINE
+══════════════════════════════════════════ */
+const S = {
+  SLEEPING: 'sleeping', WAKING: 'waking', AWAKE: 'awake',
+  LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking',
+};
+let state = S.SLEEPING;
+
+function setState(s) {
+  state = s;
+  // Always include the state name; add 'awake' superclass for all post-sleep states
+  const cls = ['stage', s];
+  if (s !== S.SLEEPING && s !== S.WAKING) cls.push('awake');
+  stage.className = cls.join(' ');
+
+}
+
+/* ══════════════════════════════════════════
+   BLINK  —  fully decoupled from wrapper animation
+   Manipulates disguiseClosed opacity directly,
+   bypassing CSS transitions for the close stroke
+   so the open/close feels like a real blink.
+══════════════════════════════════════════ */
+let blinkTimer = null;
+
+function doBlink() {
+  if (state === S.SLEEPING || state === S.WAKING) { scheduleBlink(); return; }
+
+  // Instant close — hide eyes immediately (bypass CSS transition)
+  eyesOpen.style.transition = 'none';
+  eyesOpen.style.opacity    = '0';
+
+  setTimeout(() => {
+    // Smooth open — restore transition, CSS cascade drives back to 1
+    eyesOpen.style.transition = 'opacity 0.09s ease';
+    eyesOpen.style.opacity    = ''; // → CSS cascade → 1
+    scheduleBlink();
+  }, 130);
+}
+
+function scheduleBlink() {
+  clearTimeout(blinkTimer);
+  // Occasional double-blink (15 % chance) makes it feel alive
+  const delay = Math.random() < 0.15 ? 400 : 3000 + Math.random() * 5000;
+  blinkTimer = setTimeout(doBlink, delay);
+}
+
+/* ══════════════════════════════════════════
+   WAKE UP / GO TO SLEEP
+══════════════════════════════════════════ */
+let micStream = null;
+
+async function ensureMicPermission() {
+  if (micStream) return; // already granted
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Keep the stream alive — this holds the permission for the session
+    // SpeechRecognition uses its own internal stream; this just primes the grant
+  } catch (err) {
+    console.warn('Mic permission denied:', err);
+  }
+}
+
+function wakeUp() {
+  if (state !== S.SLEEPING) return;
+  setState(S.WAKING);
+  ensureMicPermission(); // request once, non-blocking
+  setTimeout(() => {
+    setState(S.AWAKE);
+    scheduleBlink();
+    scheduleRestart(); // auto-start listening
+    launchVoiceflow(); // init Voiceflow session
+  }, 580);
+}
+
+function goToSleep() {
+  if (state === S.SLEEPING || state === S.WAKING) return;
+  stopListening();
+  stopAudio();
+  clearTimeout(blinkTimer);
+  setState(S.SLEEPING);
+}
+
+charHitbox.addEventListener('click', () => {
+  if (state === S.SLEEPING) wakeUp();
+  else if (state !== S.WAKING) goToSleep();
+});
+charHitbox.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    if (state === S.SLEEPING) wakeUp();
+    else if (state !== S.WAKING) goToSleep();
+  }
+});
+
+/* ══════════════════════════════════════════
+   VOICEFLOW v4 API INTEGRATION
+══════════════════════════════════════════ */
+const EL_API_KEY    = 'sk_5010a2b984ce6733cff1661dbe676d247d6e2d4c622f9f5c';
+const VF_API_KEY    = 'VF.DM.6a090e73188c5c9883901c8c.e4ZTTOr1qFjgDCUS';
+const VF_PROJECT    = '6a090b66a62d285256e04fad';
+const VF_ENV        = 'main';
+const VF_USER_ID    = 'clyde_' + Date.now();
+const VF_SESSION_URL = `https://general-runtime.voiceflow.com/v4/project/${VF_PROJECT}/environment/${VF_ENV}/session`;
+const VF_INTERACT_URL = 'https://general-runtime.voiceflow.com/v4/interact';
+
+let vfSessionKey = null;
+
+async function startVoiceflowSession() {
+  const res = await fetch(VF_SESSION_URL, {
+    method:  'POST',
+    headers: { 'Authorization': VF_API_KEY, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ userID: VF_USER_ID }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Session ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  vfSessionKey = data.sessionKey;
+  console.log('[VF session started]', vfSessionKey);
+}
+
+async function vfInteract(action) {
+  if (!vfSessionKey) await startVoiceflowSession();
+  const res = await fetch(VF_INTERACT_URL, {
+    method:  'POST',
+    headers: { 'Authorization': vfSessionKey, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ action, config: { tts: true, stripSSML: true } }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const traces = data.traces || data;
+  console.log('[VF traces]', JSON.stringify(traces));
+
+  // Collect text + voice reference (format: "elevenlabs:model_id:voice_id")
+  let voiceRef = null;
+  const text = traces
+    .filter(t => t.type === 'text' || t.type === 'speak')
+    .map(t => {
+      if (t.payload?.voice && !voiceRef) voiceRef = t.payload.voice;
+      const msg = t.payload?.message;
+      if (msg) return msg;
+      const content = t.payload?.slate?.content;
+      if (content) return content.flatMap(b => b.children?.map(c => c.text) || []).join(' ');
+      return '';
+    })
+    .filter(Boolean)
+    .join(' ');
+
+  // Pre-rendered audio URLs (legacy speak traces)
+  const audioSrcs = traces
+    .filter(t => t.type === 'speak' && t.payload?.src)
+    .map(t => t.payload.src);
+
+  return { text, audioSrcs, voiceRef };
+}
+
+async function launchVoiceflow() {
+  try {
+    await startVoiceflowSession();
+    await vfInteract({ type: 'launch' });
+  } catch (e) { console.warn('[VF launch]', e.message); }
+}
+
+async function queryVoiceflow(text) {
+  const result = await vfInteract({ type: 'text', payload: text });
+  if (!result.text && !result.audioSrcs.length) {
+    return { text: "I didn't catch that — could you try again?", audioSrcs: [], voiceRef: null };
+  }
+  return result;
+}
+
+/* ══════════════════════════════════════════
+   ELEVEN LABS SYNTHESIS
+   voiceRef format: "elevenlabs:model_id:voice_id"
+══════════════════════════════════════════ */
+async function synthesizeElevenLabs(text, voiceRef) {
+  const parts   = (voiceRef || '').split(':');
+  const voiceId = parts[2] || 'N2lVS1w4EtoT3dr4eOWO'; // Callum
+  const modelId = parts[1] || 'eleven_turbo_v2_5';
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method:  'POST',
+    headers: { 'xi-api-key': EL_API_KEY, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      text,
+      model_id: modelId,
+      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true }
+    }),
+  });
+  if (!res.ok) throw new Error(`ElevenLabs ${res.status}`);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+/* ══════════════════════════════════════════
+   SPEECH RECOGNITION  —  always-on when awake
+══════════════════════════════════════════ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null, isListening = false;
+
+if (!SR) {
+  document.getElementById('browserWarn').style.display = 'block';
+} else {
+  recognition = new SR();
+  recognition.continuous     = false;
+  recognition.interimResults = false;
+  recognition.lang           = 'en-US';
+
+  recognition.onspeechstart = () => stage.classList.add('speech-active');
+  recognition.onspeechend   = () => stage.classList.remove('speech-active');
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[e.results.length - 1][0].transcript;
+    stopListening();
+    processQuery(transcript);
+  };
+  recognition.onerror = (e) => {
+    isListening = false;
+    stage.classList.remove('speech-active');
+    if (state === S.LISTENING) setState(S.AWAKE);
+    if (state === S.AWAKE) scheduleRestart();
+  };
+  recognition.onend = () => {
+    isListening = false;
+    stage.classList.remove('speech-active');
+  };
+}
+
+let restartTimer = null;
+function scheduleRestart() {
+  clearTimeout(restartTimer);
+  restartTimer = setTimeout(startListening, 300);
+}
+
+function startListening() {
+  if (!recognition || isListening) return;
+  if (state !== S.AWAKE) return;
+  isListening = true;
+  recognition.start();
+  setState(S.LISTENING);
+}
+
+function stopListening() {
+  isListening = false;
+  clearTimeout(restartTimer);
+  stage.classList.remove('speech-active');
+  try { recognition && recognition.stop(); } catch (_) {}
+}
+
+/* ══════════════════════════════════════════
+   ELEVEN LABS AUDIO PLAYBACK
+══════════════════════════════════════════ */
+let currentAudio = null;
+
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = '';
+    currentAudio = null;
+  }
+  synth && synth.cancel();
+}
+
+async function playAudioSrcs(srcs, sleepAfter) {
+  setState(S.SPEAKING);
+  try {
+    for (const src of srcs) {
+      await new Promise((resolve, reject) => {
+        const audio = new Audio(src);
+        currentAudio = audio;
+        audio.onended  = resolve;
+        audio.onerror  = reject;
+        audio.play().catch(reject);
+      });
+    }
+  } finally {
+    currentAudio = null;
+  }
+  if (sleepAfter) { goToSleep(); return; }
+  setState(S.AWAKE);
+  scheduleRestart();
+}
+
+async function processQuery(text) {
+  setState(S.THINKING);
+  try {
+    const { text: reply, audioSrcs, voiceRef } = await queryVoiceflow(text);
+    const sleep = ['bye','goodbye','sleep','go back to sleep','later']
+                    .some(w => text.toLowerCase().includes(w));
+    if (audioSrcs.length > 0) {
+      // Pre-rendered audio from Voiceflow
+      await playAudioSrcs(audioSrcs, sleep);
+    } else if (reply && voiceRef) {
+      // Synthesize via Eleven Labs with the voice Voiceflow specified
+      const src = await synthesizeElevenLabs(reply, voiceRef);
+      await playAudioSrcs([src], sleep);
+    } else {
+      speak(reply, sleep); // fallback to browser TTS
+    }
+  } catch (err) {
+    console.error('Voiceflow/ElevenLabs error:', err);
+    speak("Something went wrong — try again in a moment.");
+  }
+}
+
+/* ══════════════════════════════════════════
+   SPEECH SYNTHESIS
+══════════════════════════════════════════ */
+const synth = window.speechSynthesis;
+
+function speak(text, sleepAfter = false) {
+  if (!synth) { setState(S.AWAKE); return; }
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.94; utt.pitch = 1; utt.volume = 1;
+  const voices = synth.getVoices();
+  const pick = voices.find(v =>
+    v.name === 'Daniel' ||
+    v.name.includes('Google US English') ||
+    v.name.includes('Alex') ||
+    (v.lang === 'en-US' && !v.name.includes('Google'))
+  );
+  if (pick) utt.voice = pick;
+  utt.onstart = () => setState(S.SPEAKING);
+  utt.onend   = () => {
+    if (sleepAfter) { goToSleep(); return; }
+    setState(S.AWAKE);
+    scheduleRestart(); // immediately listen again
+  };
+  utt.onerror = () => { setState(S.AWAKE); scheduleRestart(); };
+  synth.speak(utt);
+}
+if (synth) synth.onvoiceschanged = () => {};
+
+</script>
+</body>
+</html>
