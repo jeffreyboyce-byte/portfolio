@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clyde — Jeffrey Boyce</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Archivo+Narrow:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Archivo+Narrow:wght@700&family=DM+Sans:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -314,23 +314,53 @@
 
     /* ── Bottom hints (static, centred, positioned by JS) ───────── */
     #sleepHint, #awakeHint {
-      position: absolute;
-      transform: translateX(-50%);
       color: rgba(255,255,255,0.30);
       font-family: 'Archivo Narrow', sans-serif;
       font-weight: 700;
       font-size: 16px; letter-spacing: 0.20em; text-transform: uppercase;
       pointer-events: none;
-      z-index: 25;
       opacity: 0;
       transition: opacity 0.45s ease;
       white-space: nowrap;
+      position: absolute; /* hidden off-layout when opacity 0 */
+    }
+    /* When inside the footer they flow naturally; opacity still toggled by state */
+    #pageFooter #sleepHint,
+    #pageFooter #awakeHint {
+      position: static;
+      transform: none;
     }
     #stage.sleeping  #sleepHint { opacity: 1; }
     #stage.awake     #awakeHint,
     #stage.listening #awakeHint,
     #stage.thinking  #awakeHint,
     #stage.speaking  #awakeHint { opacity: 1; }
+
+    /* ── Page footer ─────────────────────────────────────────────── */
+    #pageFooter {
+      position: fixed;
+      bottom: 18px;
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      pointer-events: none;
+      z-index: 30;
+    }
+    #pageFooter p {
+      font-family: 'Google Sans', 'DM Sans', sans-serif;
+      font-size: 12px;
+      color: rgba(255,255,255,0.30);
+      letter-spacing: 0.01em;
+      margin: 0;
+    }
+    #pageFooter a {
+      color: #D97757;
+      text-decoration: none;
+      pointer-events: all;
+    }
+    #pageFooter a:hover { text-decoration: underline; }
 
     /* ── Cursor-following tooltip ────────────────────────────────── */
     #cursorTip {
@@ -410,12 +440,16 @@
 
   <div id="charHitbox" role="button" tabindex="0" aria-label="Wake up Clyde"></div>
 
-  <!-- Static bottom hints -->
-  <div id="sleepHint">tap clyde to wake</div>
-  <div id="awakeHint">tap clyde to sleep</div>
-
   <!-- Cursor-following tooltip -->
   <div id="cursorTip"></div>
+
+  <!-- Footer: hint → credit → browser note -->
+  <div id="pageFooter">
+    <div id="sleepHint">tap clyde to wake</div>
+    <div id="awakeHint">tap clyde to sleep</div>
+    <p><span id="footerYear"></span> Built by Clyde's best friend <a href="https://JeffreyPeronaBoyce.com" target="_blank" rel="noopener">JeffreyPeronaBoyce.com</a></p>
+    <p>Best viewed in Chrome Desktop</p>
+  </div>
 
 
   <!-- Voice UI -->
@@ -547,17 +581,14 @@ function layoutOverlays() {
     width: hs + 'px', height: hs + 'px',
   });
 
-  // Bottom hints — centred horizontally at Figma y ≈ 752
-  const hintY = (offY + 752 * scale) + 'px';
-  const hintX = (vw / 2) + 'px';
-  [document.getElementById('sleepHint'), document.getElementById('awakeHint')].forEach(el => {
-    el.style.left = hintX;
-    el.style.top  = hintY;
-  });
+  // Hints are now inside #pageFooter — no JS positioning needed
 }
 
 layoutOverlays();
 window.addEventListener('resize', layoutOverlays);
+
+// Inject current year into footer
+document.getElementById('footerYear').textContent = new Date().getFullYear();
 
 // On mobile, update the awake hint to reflect tap-to-speak model
 if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
