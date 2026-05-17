@@ -754,6 +754,8 @@ if (!SR) {
   recognition.onend = () => {
     isListening = false;
     stage.classList.remove('speech-active');
+    // Keep the mic loop alive while awake
+    if (state === S.AWAKE || state === S.LISTENING) scheduleRestart();
   };
 }
 
@@ -767,8 +769,14 @@ function startListening() {
   if (!recognition || isListening) return;
   if (state !== S.AWAKE) return;
   isListening = true;
-  recognition.start();
-  setState(S.LISTENING);
+  try {
+    recognition.start();
+    setState(S.LISTENING);
+  } catch (e) {
+    // Recognizer still cleaning up — retry shortly
+    isListening = false;
+    scheduleRestart();
+  }
 }
 
 function stopListening() {
@@ -809,7 +817,7 @@ async function playAudioSrcs(srcs, sleepAfter) {
   }
   if (sleepAfter) { goToSleep(); return; }
   setState(S.AWAKE);
-  scheduleRestart();
+  setTimeout(scheduleRestart, 400); // extra gap so mic is clear after audio
 }
 
 async function processQuery(text) {
