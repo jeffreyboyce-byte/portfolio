@@ -417,8 +417,7 @@
   <!-- Cursor-following tooltip -->
   <div id="cursorTip"></div>
 
-  <!-- Debug overlay — always visible for diagnostics, remove when done -->
-  <div id="debugPanel" style="display:block;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:13px;padding:10px;z-index:99999;max-height:200px;overflow-y:auto;white-space:pre-wrap;">DEBUG READY\n</div>
+  <!-- debugPanel injected by JS -->
 
   <!-- Voice UI -->
   <div id="voiceUI">
@@ -432,8 +431,23 @@
 <div id="browserWarn">Voice recognition needs Chrome or Edge.</div>
 
 <script>
-// Patch debug panel immediately so we can log before anything else runs
-(function(){ const p = document.getElementById('debugPanel'); if(p){ p.textContent = 'JS started\n'; } })();
+// Create debug panel as a direct child of <body> to avoid overflow:hidden clipping
+const debugPanel = (function() {
+  const el = document.createElement('div');
+  el.id = 'debugPanel';
+  el.setAttribute('style', [
+    'position:fixed','bottom:0','left:0','right:0',
+    'background:#000','color:#0f0',
+    'font-family:monospace','font-size:14px','line-height:1.4',
+    'padding:10px 12px','z-index:2147483647',
+    'max-height:220px','overflow-y:auto',
+    'white-space:pre-wrap','word-break:break-all',
+    'pointer-events:none'
+  ].join(';'));
+  el.textContent = 'DEBUG PANEL READY\n';
+  document.body.appendChild(el);
+  return el;
+})();
 
 /* ══════════════════════════════════════════
    FIGMA LAYOUT CONSTANTS
@@ -818,8 +832,7 @@ const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null, isListening = false;
 
-// Debug logger — always visible
-const debugPanel = document.getElementById('debugPanel');
+// Debug logger
 function dbg(msg) {
   const t = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const line = t + ' ' + msg + '\n';
