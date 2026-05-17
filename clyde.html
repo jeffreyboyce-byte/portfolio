@@ -417,8 +417,8 @@
   <!-- Cursor-following tooltip -->
   <div id="cursorTip"></div>
 
-  <!-- Mobile debug overlay — remove once speech is confirmed working -->
-  <div id="debugPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:9999;max-height:180px;overflow-y:auto;white-space:pre-wrap;"></div>
+  <!-- Debug overlay — always visible for diagnostics, remove when done -->
+  <div id="debugPanel" style="display:block;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:13px;padding:10px;z-index:99999;max-height:200px;overflow-y:auto;white-space:pre-wrap;">DEBUG READY\n</div>
 
   <!-- Voice UI -->
   <div id="voiceUI">
@@ -432,6 +432,9 @@
 <div id="browserWarn">Voice recognition needs Chrome or Edge.</div>
 
 <script>
+// Patch debug panel immediately so we can log before anything else runs
+(function(){ const p = document.getElementById('debugPanel'); if(p){ p.textContent = 'JS started\n'; } })();
+
 /* ══════════════════════════════════════════
    FIGMA LAYOUT CONSTANTS
    Frame: 1200 × 800  (node 49:97)
@@ -815,14 +818,13 @@ const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null, isListening = false;
 
-// Debug logger — visible panel on mobile, console on desktop
+// Debug logger — always visible
 const debugPanel = document.getElementById('debugPanel');
-if (isMobile) debugPanel.style.display = 'block';
 function dbg(msg) {
   const t = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const line = t + ' ' + msg + '\n';
   console.log('[SR]', msg);
-  if (isMobile) { debugPanel.textContent = line + debugPanel.textContent; }
+  debugPanel.textContent = line + debugPanel.textContent;
 }
 
 if (!SR) {
