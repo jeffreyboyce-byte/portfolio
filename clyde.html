@@ -313,7 +313,16 @@
 
 
     /* ── Bottom hints (static, centred, positioned by JS) ───────── */
+    #hintWrap {
+      position: relative;
+      height: 22px; /* fixed height = one hint line — never shifts */
+      width: 100%;
+      margin-bottom: 16px;
+    }
     #sleepHint, #awakeHint {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      text-align: center;
       color: rgba(255,255,255,0.30);
       font-family: 'Archivo Narrow', sans-serif;
       font-weight: 700;
@@ -322,13 +331,6 @@
       opacity: 0;
       transition: opacity 0.45s ease;
       white-space: nowrap;
-      position: absolute; /* hidden off-layout when opacity 0 */
-    }
-    /* When inside the footer they flow naturally; opacity still toggled by state */
-    #pageFooter #sleepHint,
-    #pageFooter #awakeHint {
-      position: static;
-      transform: none;
     }
     #stage.sleeping  #sleepHint { opacity: 1; }
     #stage.awake     #awakeHint,
@@ -445,8 +447,10 @@
 
   <!-- Footer: hint → credit → browser note -->
   <div id="pageFooter">
-    <div id="sleepHint">tap clyde to wake</div>
-    <div id="awakeHint">tap clyde to sleep</div>
+    <div id="hintWrap">
+      <div id="sleepHint">tap clyde to wake</div>
+      <div id="awakeHint">tap clyde to sleep</div>
+    </div>
     <p><span id="footerYear"></span> Built by Clyde's best friend <a href="https://JeffreyPeronaBoyce.com" target="_blank" rel="noopener">JeffreyPeronaBoyce.com</a></p>
     <p>Best viewed in Chrome Desktop</p>
   </div>
