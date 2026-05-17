@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clyde — Jeffrey Boyce</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Archivo+Narrow:wght@700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -238,7 +239,7 @@
     #charHitbox {
       position: absolute;
       border-radius: 50%;
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg filter='drop-shadow(0 1px 2px rgba(0,0,0,0.45))'%3E%3Cpath fill='%23ffffff' stroke='%23222' stroke-width='1.4' stroke-linejoin='round' d='M16 2a3.5 3.5 0 0 1 3.5 3.5V18a4 4 0 0 1 1.8-.9 3.3 3.3 0 0 1 3.5 2 3.3 3.3 0 0 1 3-.8 3.2 3.2 0 0 1 2.6 2 3.2 3.2 0 0 1 2.6 3.2v4.8C33 34.8 28.8 40 22.5 40h-2C14.2 40 10 35.4 10 29v-8.5a3.5 3.5 0 0 1 2.5-3.36V5.5A3.5 3.5 0 0 1 16 2z'/%3E%3C/g%3E%3C/svg%3E") 16 2, pointer;
+      cursor: url("data:image/png;base64,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") 26 13, pointer;
       z-index: 20;
     }
     #stage.sleeping #charHitbox:hover { filter: brightness(1.08); }
@@ -298,42 +299,62 @@
     }
 
     /* Each bar: --h = peak height, --spd = speed, animation-delay for stagger */
-    .wbar:nth-child(1)  { --h: 18px; --spd: 0.54s; animation-delay: -0.12s; }
-    .wbar:nth-child(2)  { --h: 42px; --spd: 0.41s; animation-delay: -0.33s; }
-    .wbar:nth-child(3)  { --h: 30px; --spd: 0.68s; animation-delay: -0.07s; }
-    .wbar:nth-child(4)  { --h: 54px; --spd: 0.38s; animation-delay: -0.51s; }
-    .wbar:nth-child(5)  { --h: 36px; --spd: 0.58s; animation-delay: -0.22s; }
-    .wbar:nth-child(6)  { --h: 60px; --spd: 0.34s; animation-delay: -0.44s; }
-    .wbar:nth-child(7)  { --h: 32px; --spd: 0.62s; animation-delay: -0.16s; }
-    .wbar:nth-child(8)  { --h: 50px; --spd: 0.43s; animation-delay: -0.38s; }
-    .wbar:nth-child(9)  { --h: 24px; --spd: 0.71s; animation-delay: -0.09s; }
-    .wbar:nth-child(10) { --h: 44px; --spd: 0.37s; animation-delay: -0.27s; }
-    .wbar:nth-child(11) { --h: 14px; --spd: 0.56s; animation-delay: -0.18s; }
+    .wbar:nth-child(1)  { --h: min(18px, 4vw); --spd: 0.54s; animation-delay: -0.12s; }
+    .wbar:nth-child(2)  { --h: min(42px, 9vw); --spd: 0.41s; animation-delay: -0.33s; }
+    .wbar:nth-child(3)  { --h: min(30px, 6.5vw); --spd: 0.68s; animation-delay: -0.07s; }
+    .wbar:nth-child(4)  { --h: min(54px, 11vw); --spd: 0.38s; animation-delay: -0.51s; }
+    .wbar:nth-child(5)  { --h: min(36px, 8vw);  --spd: 0.58s; animation-delay: -0.22s; }
+    .wbar:nth-child(6)  { --h: min(60px, 12vw); --spd: 0.34s; animation-delay: -0.44s; }
+    .wbar:nth-child(7)  { --h: min(32px, 7vw);  --spd: 0.62s; animation-delay: -0.16s; }
+    .wbar:nth-child(8)  { --h: min(50px, 10vw); --spd: 0.43s; animation-delay: -0.38s; }
+    .wbar:nth-child(9)  { --h: min(24px, 5vw);  --spd: 0.71s; animation-delay: -0.09s; }
+    .wbar:nth-child(10) { --h: min(44px, 9.5vw); --spd: 0.37s; animation-delay: -0.27s; }
+    .wbar:nth-child(11) { --h: min(14px, 3vw);  --spd: 0.56s; animation-delay: -0.18s; }
 
 
-    /* Shared hint styling */
+    /* ── Bottom hints (static, centred, positioned by JS) ───────── */
     #sleepHint, #awakeHint {
       position: absolute;
-      bottom: clamp(24px, 5vh, 56px); left: 0; right: 0;
-      text-align: center;
-      color: rgba(255,255,255,0.20);
-      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
-      z-index: 25; transition: opacity 0.4s;
-    }
-
-    /* "tap to wake" — only during sleeping */
-    #stage.waking    #sleepHint,
-    #stage.awake     #sleepHint,
-    #stage.listening #sleepHint,
-    #stage.thinking  #sleepHint,
-    #stage.speaking  #sleepHint { opacity: 0; pointer-events: none; }
-
-    /* "tap to sleep" — only during idle awake */
-    #awakeHint {
-      opacity: 0;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.30);
+      font-family: 'Archivo Narrow', sans-serif;
+      font-weight: 700;
+      font-size: 16px; letter-spacing: 0.20em; text-transform: uppercase;
       pointer-events: none;
+      z-index: 25;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+      white-space: nowrap;
     }
-    #stage.awake #awakeHint { opacity: 1; pointer-events: auto; }
+    #stage.sleeping  #sleepHint { opacity: 1; }
+    #stage.awake     #awakeHint,
+    #stage.listening #awakeHint,
+    #stage.thinking  #awakeHint,
+    #stage.speaking  #awakeHint { opacity: 1; }
+
+    /* ── Cursor-following tooltip ────────────────────────────────── */
+    #cursorTip {
+      position: fixed;
+      background: #1F1F1E;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      font-family: 'Fredoka One', cursive;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      padding: 7px 18px;
+      border-radius: 50px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.14s ease, transform 0.14s ease;
+      z-index: 1000;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.30), 0 0 0 2px rgba(255,255,255,0.25);
+    }
+    #cursorTip.visible {
+      opacity: 1;
+      transform: translateY(0px);
+    }
 
     /* Browser warning */
     #browserWarn {
@@ -389,8 +410,12 @@
 
   <div id="charHitbox" role="button" tabindex="0" aria-label="Wake up Clyde"></div>
 
-  <div id="sleepHint">tap to wake</div>
-  <div id="awakeHint">tap to sleep</div>
+  <!-- Static bottom hints -->
+  <div id="sleepHint">tap clyde to wake</div>
+  <div id="awakeHint">tap clyde to sleep</div>
+
+  <!-- Cursor-following tooltip -->
+  <div id="cursorTip"></div>
 
   <!-- Voice UI -->
   <div id="voiceUI">
@@ -441,10 +466,17 @@ const voiceUI       = document.getElementById('voiceUI');
 
 /* ══════════════════════════════════════════
    LAYOUT  —  Figma coords → viewport px
+   Portrait phones: scale to width so the
+   character fills the screen nicely instead
+   of being miniaturised by the 1200px frame.
 ══════════════════════════════════════════ */
 function layoutOverlays() {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const scale = Math.min(vw / IMG_W, vh / IMG_H);
+  const isPortrait = vh > vw;
+  // 650 = the character-centric portion of the 1200px frame
+  const scale = isPortrait
+    ? vw / 650
+    : Math.min(vw / IMG_W, vh / IMG_H);
   const rendW = IMG_W * scale, rendH = IMG_H * scale;
   const offX  = (vw - rendW) / 2;
   const offY  = (vh - rendH) / 2;
@@ -509,6 +541,14 @@ function layoutOverlays() {
   Object.assign(charHitbox.style, {
     left: (cx - hs / 2) + 'px', top: (cy - hs / 2) + 'px',
     width: hs + 'px', height: hs + 'px',
+  });
+
+  // Bottom hints — centred horizontally at Figma y ≈ 752
+  const hintY = (offY + 752 * scale) + 'px';
+  const hintX = (vw / 2) + 'px';
+  [document.getElementById('sleepHint'), document.getElementById('awakeHint')].forEach(el => {
+    el.style.left = hintX;
+    el.style.top  = hintY;
   });
 }
 
@@ -576,6 +616,28 @@ function scheduleBlink() {
 /* ══════════════════════════════════════════
    WAKE UP / GO TO SLEEP
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   iOS AUDIO UNLOCK
+   iOS blocks audio.play() unless it occurs
+   inside a user-gesture call stack. Calling
+   AudioContext.resume() here, from the tap
+   handler, unlocks all subsequent playback.
+══════════════════════════════════════════ */
+let _audioCtx = null;
+function unlockAudio() {
+  if (_audioCtx) return;
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _audioCtx.resume();
+    // Play a zero-length silent buffer to fully unlock HTML5 audio on iOS
+    const buf = _audioCtx.createBuffer(1, 1, 22050);
+    const src = _audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(_audioCtx.destination);
+    src.start(0);
+  } catch (_) {}
+}
+
 let micStream = null;
 
 async function ensureMicPermission() {
@@ -592,7 +654,8 @@ async function ensureMicPermission() {
 function wakeUp() {
   if (state !== S.SLEEPING) return;
   setState(S.WAKING);
-  ensureMicPermission(); // request once, non-blocking
+  unlockAudio();          // unlock iOS audio from this tap gesture
+  ensureMicPermission(); // request mic once, non-blocking
   setTimeout(() => {
     setState(S.AWAKE);
     scheduleBlink();
@@ -730,7 +793,12 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null, isListening = false;
 
 if (!SR) {
-  document.getElementById('browserWarn').style.display = 'block';
+  const warn = document.getElementById('browserWarn');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  warn.textContent = isIOS
+    ? 'Voice input isn\'t supported on iOS Safari. Try Chrome on Android or a desktop browser.'
+    : 'Voice recognition needs Chrome or Edge.';
+  warn.style.display = 'block';
 } else {
   recognition = new SR();
   recognition.continuous     = false;
@@ -870,6 +938,32 @@ function speak(text, sleepAfter = false) {
   synth.speak(utt);
 }
 if (synth) synth.onvoiceschanged = () => {};
+
+/* ══════════════════════════════════════════
+   CURSOR-FOLLOWING TOOLTIP
+══════════════════════════════════════════ */
+const cursorTip = document.getElementById('cursorTip');
+
+function updateCursorTipText() {
+  cursorTip.textContent = (state === S.SLEEPING) ? 'Tap to Wake!' : 'Tap to Sleep!';
+}
+
+charHitbox.addEventListener('mouseenter', (e) => {
+  updateCursorTipText();
+  cursorTip.style.left = (e.clientX + 20) + 'px';
+  cursorTip.style.top  = (e.clientY - 44) + 'px';
+  cursorTip.classList.add('visible');
+});
+
+charHitbox.addEventListener('mousemove', (e) => {
+  updateCursorTipText();
+  cursorTip.style.left = (e.clientX + 20) + 'px';
+  cursorTip.style.top  = (e.clientY - 44) + 'px';
+});
+
+charHitbox.addEventListener('mouseleave', () => {
+  cursorTip.classList.remove('visible');
+});
 
 </script>
 </body>
