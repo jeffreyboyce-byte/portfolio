@@ -255,7 +255,7 @@
       align-items: center;
       gap: 14px;
       z-index: 30;
-      transform-origin: top center;
+      transform-origin: bottom center;
       opacity: 0;
       transform: translateY(12px);
       transition: opacity 0.45s ease 0.15s, transform 0.45s ease 0.15s;
@@ -338,10 +338,10 @@
     #stage.thinking  #awakeHint,
     #stage.speaking  #awakeHint { opacity: 1; }
 
-    /* ── Page footer ─────────────────────────────────────────────── */
+    /* ── Page footer — top set by JS so it always sits below voiceUI ── */
     #pageFooter {
-      position: fixed;
-      bottom: 18px;
+      position: absolute;
+      /* top set by layoutOverlays() */
       left: 0; right: 0;
       display: flex;
       flex-direction: column;
@@ -388,6 +388,65 @@
       transform: translateY(0px);
     }
 
+    /* ── Education banner ───────────────────────────────────────── */
+    #eduBanner {
+      position: absolute;
+      z-index: 40;
+      /* left / top / width set by layoutOverlays() */
+      background: rgba(28, 28, 27, 0.93);
+      border: 1px solid rgba(217, 119, 87, 0.40);
+      border-radius: 18px;
+      padding: 16px 44px 16px 20px;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: rgba(255,255,255,0.82);
+      font-family: 'DM Sans', 'Google Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      pointer-events: all;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    #eduBanner.edu-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #eduBanner.edu-out {
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+    }
+    /* Small coral dot accent */
+    #eduBanner::before {
+      content: '';
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--coral);
+      margin-right: 8px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    #eduClose {
+      position: absolute;
+      top: 11px; right: 13px;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    #eduClose:hover {
+      color: rgba(255,255,255,0.85);
+      background: rgba(255,255,255,0.08);
+    }
+
     /* Browser warning */
     #browserWarn {
       display: none; position: fixed;
@@ -402,28 +461,34 @@
 <body>
 <div id="stage" class="sleeping">
 
+  <!-- Education banner — visible on load, auto-dismisses after 15 s -->
+  <div id="eduBanner" role="status">
+    I'm Clyde — Jeffrey's best friend, and frankly his biggest fan. He built me to sit here looking cute and fuzzy and to talk about how great he is as a product designer. Tap me to wake me up and ask anything — I'm legally required to say good things, but they're also all true.
+    <button id="eduClose" aria-label="Dismiss">✕</button>
+  </div>
+
   <!-- Name: stationary, NEVER animates. Single vectorized Figma asset (45:65). -->
   <img id="charName"
-       src="https://www.figma.com/api/mcp/asset/4206be20-d169-498e-aeab-7123d014af98"
+       src="./assets/name.svg"
        alt="Clyde" draggable="false" />
 
   <!-- Character wrapper: the ONLY animated element -->
   <div id="charWrapper">
     <!-- 45:72 Sunburst body — fills wrapper -->
     <img id="charBody"
-         src="https://www.figma.com/api/mcp/asset/a75789b4-af59-49bc-8fee-699f0132090d"
+         src="./assets/clyde.svg"
          alt="" draggable="false" />
     <!-- 45:77 Sleeping disguise — closed-eye curves baked into lenses -->
     <img id="disguiseSleep"
-         src="https://www.figma.com/api/mcp/asset/fc2da154-e3a1-4aa0-9a7b-2984905d3fe9"
+         src="data:image/png;base64,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"
          alt="" draggable="false" />
     <!-- 45:60 Awake disguise — open empty lenses (eyes are a separate layer) -->
     <img id="disguiseAwake"
-         src="https://www.figma.com/api/mcp/asset/828e96f6-a18e-484e-b7c0-e892c3eee2ac"
+         src="data:image/png;base64,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"
          alt="" draggable="false" />
     <!-- 49:99 Open eyes — 46×9 strip, shown when awake -->
     <img id="eyesOpen"
-         src="https://www.figma.com/api/mcp/asset/d8fdd08f-b817-4b28-934a-5509c28bb87e"
+         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFwAAAASCAYAAADWvblEAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAAAOVJREFUeAHtmOEJgzAQhZ8u0mzQEdIN7AjdzFHiBnWDZANHaJOSgIUWYu/RH7l88EQCOeFTMHfAZ2zMHONjHjn3vDahUxB7MjFut/lb0gNO0IsBwdM5ZqsoUrLlPdqgeDIHi+yLafrSDUiewg9FShz0EEDwNAmKlFi0D8XTGC9XyLmhfWie0jFG+uY82ofiacg3DAa0DcXTiM5fScID5KxonwA5axK+QI4G4QvkvDxZyH8GGuYrVE9OUMRDDzRPBr21r8GA6KkPr+qgejKomxc49PFsANFTamNnvHdXPq9d0Ckc9vQENZ1TtDQyEhAAAAAASUVORK5CYII="
          alt="" draggable="false" />
   </div>
 
@@ -515,32 +580,68 @@ const voiceUI       = document.getElementById('voiceUI');
 function layoutOverlays() {
   const vw = window.innerWidth, vh = window.innerHeight;
   const isPortrait = vh > vw;
-  // 650 = the character-centric portion of the 1200px frame
-  const scale = isPortrait
+
+  // Base scale: fit the Figma frame to the viewport.
+  // Portrait scales to the character-centric 650 px width; landscape fits the full frame.
+  const rawScale = isPortrait
     ? vw / 650
     : Math.min(vw / IMG_W, vh / IMG_H);
+
+  // Floor: Clyde must be at least 80 px wide — avoids invisibly tiny character.
+  const MIN_CHAR_PX  = 80;
+  let   scale        = Math.max(rawScale, MIN_CHAR_PX / CHAR_W);
+
+  // Ceiling: the entire vertical stack (Clyde → name → voiceUI → footer) must fit in vh.
+  // Derived analytically from nameBottom + VOICE_GAP + voiceUIH + FOOTER_GAP + footerH ≤ vh:
+  //   scale ≤ (vh/2 − STACK_EXTRAS) / (NAME_Y + NAME_H − IMG_H/2)
+  const FOOTER_EST_H = Math.max(
+    (document.getElementById('pageFooter') || {}).offsetHeight || 0, 70
+  );
+  const STACK_EXTRAS = 20 + 80 + 16 + FOOTER_EST_H; // VOICE_GAP + voiceUIH + FOOTER_GAP + footerH
+  const stackDenom   = NAME_Y + NAME_H - IMG_H / 2;  // 179.37 px per scale unit
+  const maxFitScale  = (vh / 2 - STACK_EXTRAS) / stackDenom;
+  if (maxFitScale > 0) scale = Math.min(scale, maxFitScale);
+
   const rendW = IMG_W * scale, rendH = IMG_H * scale;
   const offX  = (vw - rendW) / 2;
   const offY  = (vh - rendH) / 2;
 
-  // ── Character wrapper = sunburst bounding box ─────────────────
+  // ── 1. Character wrapper — clamped so Clyde never leaves the top ─
+  const CHAR_TOP_MIN = 12; // px from viewport top
   const wL = offX + CHAR_X * scale;
-  const wT = offY + CHAR_Y * scale;
+  const wT = Math.max(CHAR_TOP_MIN, offY + CHAR_Y * scale);
   const wW = CHAR_W * scale;
   const wH = CHAR_H * scale;
+
   Object.assign(charWrapper.style, {
     left: wL + 'px', top: wT + 'px',
     width: wW + 'px', height: wH + 'px',
   });
 
-  // ── Disguise variants — same position, different images ───────
+  // ── 1b. Education banner — anchored by BOTTOM edge above Clyde ──────
+  // Using bottom instead of top so the banner always grows upward from
+  // a fixed gap above Clyde — no dependency on measured offsetHeight.
+  const eduBanner = document.getElementById('eduBanner');
+  if (eduBanner && !eduBanner.classList.contains('edu-out')) {
+    const BANNER_MAX_W = 420;
+    const BANNER_GAP   = 18; // px gap between banner bottom and Clyde top
+    const bW = Math.min(BANNER_MAX_W, vw - 48);
+    // bottom is measured from the stage bottom (= viewport bottom since stage = 100vh)
+    const bannerBottom = vh - wT + BANNER_GAP;
+    eduBanner.style.width  = bW + 'px';
+    eduBanner.style.left   = ((vw - bW) / 2) + 'px';
+    eduBanner.style.top    = '';              // clear any previous top value
+    eduBanner.style.bottom = bannerBottom + 'px';
+  }
+
+  // ── 2. Disguise variants — relative to charWrapper ────────────
   const dL = (DISG_X - CHAR_X) * scale;
   const dT = (DISG_Y - CHAR_Y) * scale;
   const dStyles = { left: dL + 'px', top: dT + 'px', width: DISG_W * scale + 'px', height: DISG_H * scale + 'px' };
   Object.assign(disguiseSleep.style, dStyles);
   Object.assign(disguiseAwake.style, dStyles);
 
-  // ── Eyes Open (49:99) — relative to wrapper top-left ──────────
+  // ── 3. Eyes Open — relative to charWrapper ────────────────────
   Object.assign(eyesOpen.style, {
     left:   EYES_DX * scale + 'px',
     top:    EYES_DY * scale + 'px',
@@ -548,20 +649,33 @@ function layoutOverlays() {
     height: EYES_H  * scale + 'px',
   });
 
-  // ── Name (45:65) — single vectorized image, stationary ────────
+  // ── 4. Name — vertical offset anchored to charWrapper top ─────
+  // This keeps Clyde + name locked together when Clyde is clamped.
+  const nameTop    = wT + (NAME_Y - CHAR_Y) * scale;
+  const nameBottom = nameTop + NAME_H * scale;
   Object.assign(charNameEl.style, {
     left:   (offX + NAME_X * scale) + 'px',
-    top:    (offY + NAME_Y * scale) + 'px',
+    top:    nameTop + 'px',
     width:  NAME_W * scale + 'px',
     height: NAME_H * scale + 'px',
   });
 
-  // ── Voice UI — centred in gap between name bottom and hint text ─
-  // Figma: name bottom ≈ y=579, hint text ≈ y=686 → midpoint ≈ 632
-  const vuY = offY + 632 * scale;
-  voiceUI.style.top = vuY + 'px';
+  // ── 5. Voice UI — derived from name bottom, always below it ───
+  // Positioning flows top-down: Clyde → name → voiceUI → footer.
+  // Nothing in this chain can overlap the element above it.
+  const VOICE_GAP   = 20; // px between name bottom and think-dots
+  const voiceUITop  = nameBottom + VOICE_GAP;
+  voiceUI.style.bottom = '';
+  voiceUI.style.top    = voiceUITop + 'px';
 
-  // ── Character centre (for hitbox / rings / ZZZ) ───────────────
+  // ── 6. Footer — derived from voiceUI bottom, always below it ──
+  const voiceUIH   = Math.max(voiceUI.offsetHeight, 80); // 80px = dots + gap + waveform
+  const FOOTER_GAP = 16; // px between voiceUI bottom and footer
+  const pageFooterEl = document.getElementById('pageFooter');
+  pageFooterEl.style.bottom = '';
+  pageFooterEl.style.top    = (voiceUITop + voiceUIH + FOOTER_GAP) + 'px';
+
+  // ── 7. Character centre (hitbox / rings / ZZZ) ────────────────
   const cx = wL + wW / 2;
   const cy = wT + wH / 2;
 
@@ -590,6 +704,26 @@ function layoutOverlays() {
 
 layoutOverlays();
 window.addEventListener('resize', layoutOverlays);
+
+/* ── Education banner: fade in, auto-dismiss after 15 s or on ✕ ── */
+(function () {
+  const banner = document.getElementById('eduBanner');
+  const closeBtn = document.getElementById('eduClose');
+  if (!banner) return;
+
+  // Fade in on next frame so the CSS transition fires
+  requestAnimationFrame(() => banner.classList.add('edu-visible'));
+
+  function dismiss() {
+    banner.classList.remove('edu-visible');
+    banner.classList.add('edu-out');
+    // Re-run layout after banner collapses so Clyde's position can adapt
+    setTimeout(layoutOverlays, 550);
+  }
+
+  closeBtn.addEventListener('click', dismiss);
+  setTimeout(dismiss, 15000);
+})();
 
 // Inject current year into footer
 document.getElementById('footerYear').textContent = new Date().getFullYear();
@@ -659,6 +793,45 @@ function scheduleBlink() {
 }
 
 /* ══════════════════════════════════════════
+   POWER-UP SEQUENCE  —  3 blinks + sfx on boot
+   Runs once at first wake, in parallel with
+   VF session init. Normal blinking resumes after.
+══════════════════════════════════════════ */
+function doBlinkOnce() {
+  return new Promise(resolve => {
+    eyesOpen.style.transition = 'none';
+    eyesOpen.style.opacity    = '0';
+    setTimeout(() => {
+      eyesOpen.style.transition = 'opacity 0.09s ease';
+      eyesOpen.style.opacity    = ''; // CSS cascade → 1
+      setTimeout(resolve, 100);       // wait for open to finish
+    }, 130);
+  });
+}
+
+async function powerUpSequence() {
+  const sfx = new Audio('./power-up.m4a');
+
+  // Promise that resolves when the clip finishes (or errors out)
+  const sfxDone = new Promise(resolve => {
+    sfx.addEventListener('ended', resolve, { once: true });
+    sfx.addEventListener('error', resolve, { once: true }); // don't block if file missing
+    sfx.play().catch(e => { console.warn('[power-up sfx]', e); resolve(); });
+  });
+
+  // 3 blinks run simultaneously with the sound
+  const blinksDone = (async () => {
+    for (let i = 0; i < 3; i++) {
+      await doBlinkOnce();
+      if (i < 2) await new Promise(r => setTimeout(r, 100));
+    }
+  })();
+
+  // Wait for both — sound AND blinks — before continuing to the greeting
+  await Promise.all([sfxDone, blinksDone]);
+}
+
+/* ══════════════════════════════════════════
    WAKE UP / GO TO SLEEP
 ══════════════════════════════════════════ */
 /* ══════════════════════════════════════════
@@ -696,35 +869,49 @@ async function ensureMicPermission() {
   }
 }
 
+// Request mic permission immediately on page load so the browser prompt
+// appears at landing rather than making the user wake Clyde first.
+ensureMicPermission();
+
 function wakeUp() {
   if (state !== S.SLEEPING) return;
   setState(S.WAKING);
   unlockAudio();          // unlock iOS audio from this tap gesture
-  ensureMicPermission(); // request mic once, non-blocking
+  ensureMicPermission(); // no-op if already granted; safety net for late permission
   setTimeout(() => {
     setState(S.AWAKE);
-    scheduleBlink();
-    scheduleRestart(); // auto-start listening
-    launchVoiceflow(); // init Voiceflow session
+    launchVoiceflow(); // power-up blinks + greeting, then listening
   }, 580);
 }
 
-function goToSleep() {
-  if (state === S.SLEEPING || state === S.WAKING) return;
+let goingToSleep = false; // guard against double-trigger during blink sequence
+
+async function goToSleep() {
+  if (state === S.SLEEPING || state === S.WAKING || goingToSleep) return;
+  goingToSleep = true;
+
   if (isMobile && isRecording) { mediaRecorder && mediaRecorder.stop(); isRecording = false; }
   stopListening();
   stopAudio();
   clearTimeout(blinkTimer);
+
+  // 3 blinks, then sleep state + power-down sound simultaneously
+  for (let i = 0; i < 3; i++) {
+    await doBlinkOnce();
+    if (i < 2) await new Promise(r => setTimeout(r, 100));
+  }
+
   setState(S.SLEEPING);
+  goingToSleep = false;
+
+  const sfx = new Audio('./power-down.m4a');
+  sfx.play().catch(e => console.warn('[power-down sfx]', e));
 }
 
 charHitbox.addEventListener('click', () => {
   if (state === S.SLEEPING) {
     wakeUp();
-    // Desktop: kick off the listen loop immediately inside the gesture
-    if (!isMobile && recognition && !isListening) {
-      try { recognition.start(); isListening = true; } catch (_) {}
-    }
+    // Listening starts after the greeting finishes (inside launchVoiceflow)
   } else if (isMobile) {
     // Mobile tap-to-speak state machine:
     // AWAKE → start recording | LISTENING → stop & transcribe | anything else → sleep
@@ -813,11 +1000,50 @@ async function vfInteract(action) {
   return { text, audioSrcs, voiceRef };
 }
 
+/* ══════════════════════════════════════════
+   GREETING — 8 variants, random per session
+   Played once at first wake, never again.
+══════════════════════════════════════════ */
+const GREETINGS = [
+  "Hey there. I'm Clyde, best friend of Jeffrey Boyce. He's a super cool product designer working on multimodal and conversational experiences — currently shaping how Gemini behaves on smart glasses. Ask me anything about his work, or I can point you to his portfolio.",
+  "Hi. I'm Clyde. My best friend Jeffrey works on how AI listens, speaks, and ends turns across devices. Ask me anything.",
+  "So — I'm Clyde. Jeffrey, my best friend who I'm here to talk about, redesigned voice authentication at Google so it works across every device instead of needing setup on each one. What are you curious about?",
+  "Welcome. I'm Clyde, here to talk about my best friend Jeffrey Boyce. He designs multimodal AI experiences — voice, vision, the whole stack. Where would you like to start?",
+  "Hey, Clyde here. My best friend Jeffrey, who you'll be hearing about, leads design on Gemini for Android XR — smart glasses. What can I help with?",
+  "Hi there. I'm Clyde. Jeffrey's my best friend who shaped how Gemini's voice identity works — voice selection, voice match, all of it. What would you like to know?",
+  "Hey, I'm Clyde. My best friend Jeffrey designs how AI behaves across an ecosystem of devices — glasses, phone, watch, earbuds — figuring out which one should respond and when. Ask away.",
+  "Alright — I'm Clyde, best friend of Jeffrey Boyce. He's a product designer working on the harder edges of conversational AI: latency, turn-taking, mic mechanics. What can I tell you?"
+];
+
+let greetingPlayed = false;
+
 async function launchVoiceflow() {
   try {
-    await startVoiceflowSession();
-    await vfInteract({ type: 'launch' });
-  } catch (e) { console.warn('[VF launch]', e.message); }
+    // VF session init + power-up blinks/sound run in parallel every wake
+    await Promise.all([startVoiceflowSession(), powerUpSequence()]);
+
+    // Fire VF launch in background so conversation state initialises, but we don't wait for it
+    vfInteract({ type: 'launch' }).catch(e => console.warn('[VF launch bg]', e.message));
+
+    if (state === S.SLEEPING) return;
+    scheduleBlink(); // start normal random blinking now
+
+    if (!greetingPlayed) {
+      greetingPlayed = true;
+      const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+      console.log('[greeting]', greeting);
+      const src = await synthesizeElevenLabs(greeting, null); // uses default EL voice
+      if (state === S.SLEEPING) return;
+      await playAudioSrcs([src], false);
+    } else {
+      // Subsequent wakes (after sleep/re-wake): skip greeting, go straight to listening
+      scheduleRestart();
+    }
+  } catch (e) {
+    console.warn('[VF launch]', e.message);
+    scheduleBlink();
+    if (state !== S.SLEEPING) scheduleRestart(); // fallback: start listening anyway
+  }
 }
 
 async function queryVoiceflow(text) {
@@ -1053,8 +1279,10 @@ async function processQuery(text) {
   setState(S.THINKING);
   try {
     const { text: reply, audioSrcs, voiceRef } = await queryVoiceflow(text);
-    // If Clyde was put to sleep while the API call was in flight, bail out silently
-    if (state === S.SLEEPING) return;
+    // If Clyde was put to sleep while the API call was in flight, bail out silently.
+    // Also check goingToSleep: setState(S.SLEEPING) fires after the blink animation,
+    // so state may still be THINKING/SPEAKING when the user has already tapped sleep.
+    if (state === S.SLEEPING || goingToSleep) return;
     const sleep = ['bye','goodbye','sleep','go back to sleep','later']
                     .some(w => text.toLowerCase().includes(w));
     if (audioSrcs.length > 0) {
@@ -1069,8 +1297,9 @@ async function processQuery(text) {
     }
   } catch (err) {
     console.error('Voiceflow/ElevenLabs error:', err);
-    // Only surface the error if Clyde wasn't deliberately put to sleep
-    if (state !== S.SLEEPING) {
+    // Only surface the error if Clyde wasn't deliberately put to sleep.
+    // goingToSleep covers the window between stopAudio() and setState(S.SLEEPING).
+    if (state !== S.SLEEPING && !goingToSleep) {
       speak("Something went wrong — try again in a moment.");
     }
   }
