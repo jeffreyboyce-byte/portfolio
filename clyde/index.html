@@ -291,6 +291,8 @@
     }
     #stage.speech-active .wbar,
     #stage.speaking      .wbar { animation: wbar var(--spd) ease-in-out infinite alternate; }
+    /* During listening JS drives bar heights via AnalyserNode — suppress CSS anim */
+    #stage.listening .wbar { animation: none; opacity: 0.45; }
 
     @keyframes wbar {
       0%   { height: 5px;         opacity: 0.5; }
@@ -764,12 +766,75 @@ const S = {
 let state = S.SLEEPING;
 
 function setState(s) {
+  const prev = state;
   state = s;
   // Always include the state name; add 'awake' superclass for all post-sleep states
   const cls = ['stage', s];
   if (s !== S.SLEEPING && s !== S.WAKING) cls.push('awake');
   stage.className = cls.join(' ');
+  // Start/stop mic analyser when entering/leaving LISTENING
+  if (s === S.LISTENING) startMicAnalyser();
+  else if (prev === S.LISTENING) stopMicAnalyser();
+}
 
+/* ══════════════════════════════════════════
+   MIC FREQUENCY ANALYSER — drives waveform bars
+   during LISTENING state with real speech input
+══════════════════════════════════════════ */
+let _micAnalyser = null;
+let _micSrc      = null;
+let _micRafId    = null;
+
+// Max heights (px) matching each bar's --h CSS var
+const WBAR_MAX_H = [18, 42, 30, 54, 36, 60, 32, 50, 24, 44, 14];
+
+function startMicAnalyser() {
+  stopMicAnalyser();
+  if (!_audioCtx || !micStream) return;
+  try {
+    _micSrc      = _audioCtx.createMediaStreamSource(micStream);
+    _micAnalyser = _audioCtx.createAnalyser();
+    _micAnalyser.fftSize               = 512;
+    _micAnalyser.smoothingTimeConstant = 0.72;
+    _micSrc.connect(_micAnalyser);
+    const freqBuf = new Uint8Array(_micAnalyser.frequencyBinCount);
+    const wbars   = document.querySelectorAll('.wbar');
+    const N       = wbars.length; // 11
+
+    // Map bars to voice frequency range (100 Hz – 3 kHz)
+    const binHz  = _audioCtx.sampleRate / _micAnalyser.fftSize;
+    const minBin = Math.max(1, Math.floor(100  / binHz));
+    const maxBin = Math.min(Math.floor(3000 / binHz), freqBuf.length - 1);
+
+    function tick() {
+      if (state !== S.LISTENING) { stopMicAnalyser(); return; }
+      _micRafId = requestAnimationFrame(tick);
+      _micAnalyser.getByteFrequencyData(freqBuf);
+
+      for (let i = 0; i < N; i++) {
+        // Average the frequency bins that map to this bar
+        const bStart = Math.round(minBin + (maxBin - minBin) * (i / N));
+        const bEnd   = Math.round(minBin + (maxBin - minBin) * ((i + 1) / N));
+        let avg = 0;
+        for (let b = bStart; b <= bEnd; b++) avg += freqBuf[b];
+        avg /= Math.max(1, bEnd - bStart + 1);
+
+        const vol = avg / 255; // 0–1
+        const h   = Math.max(5, vol * WBAR_MAX_H[i] * 1.25);
+        wbars[i].style.height  = h.toFixed(1) + 'px';
+        wbars[i].style.opacity = (0.35 + vol * 0.65).toFixed(3);
+      }
+    }
+    tick();
+  } catch (e) { console.warn('[mic-analyser]', e); }
+}
+
+function stopMicAnalyser() {
+  if (_micRafId) { cancelAnimationFrame(_micRafId); _micRafId = null; }
+  if (_micSrc)   { try { _micSrc.disconnect(); } catch (_) {} _micSrc = null; }
+  _micAnalyser = null;
+  // Reset bar heights so CSS animation can take over again (e.g. during speaking)
+  document.querySelectorAll('.wbar').forEach(b => { b.style.height = ''; b.style.opacity = ''; });
 }
 
 /* ══════════════════════════════════════════
