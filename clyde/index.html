@@ -391,45 +391,49 @@
     }
 
     /* ── Education banner ───────────────────────────────────────── */
+    #eduScrim {
+      position: fixed;
+      inset: 0;
+      z-index: 39;
+      background: rgba(15,15,14,0.78);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    #eduScrim.edu-visible {
+      opacity: 1;
+      pointer-events: all;
+    }
     #eduBanner {
       position: absolute;
       z-index: 40;
-      /* left / top / width set by layoutOverlays() */
-      background: rgba(28, 28, 27, 0.93);
+      /* top set by layoutOverlays(); left/width handled by CSS */
+      left: 50%;
+      width: min(380px, calc(100vw - 48px));
+      background: rgba(28, 28, 27, 0.96);
       border: 1px solid rgba(217, 119, 87, 0.40);
       border-radius: 18px;
       padding: 16px 44px 16px 20px;
-      box-shadow: 0 6px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       color: rgba(255,255,255,0.82);
       font-family: 'DM Sans', 'Google Sans', sans-serif;
       font-size: 14px;
       line-height: 1.55;
       pointer-events: all;
       opacity: 0;
-      transform: translateY(-6px);
+      transform: translate(-50%, -10px);
       transition: opacity 0.5s ease, transform 0.5s ease;
     }
     #eduBanner.edu-visible {
       opacity: 1;
-      transform: translateY(0);
+      transform: translate(-50%, -50%);
     }
     #eduBanner.edu-out {
       opacity: 0;
-      transform: translateY(-6px);
+      transform: translate(-50%, -10px);
       pointer-events: none;
-    }
-    /* Small coral dot accent */
-    #eduBanner::before {
-      content: '';
-      display: inline-block;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--coral);
-      margin-right: 8px;
-      vertical-align: middle;
-      flex-shrink: 0;
     }
     #eduDisclaimer {
       display: block;
@@ -472,10 +476,13 @@
 <body>
 <div id="stage" class="sleeping">
 
+  <!-- Full-page scrim behind the education banner -->
+  <div id="eduScrim"></div>
+
   <!-- Education banner — visible on load, auto-dismisses after 15 s -->
   <div id="eduBanner" role="status">
     <span id="eduDisclaimer">BEST VIEWED ON CHROME DESKTOP</span>
-    I'm Clyde — Jeffrey's best friend and full-time hype man. Tap me and ask anything. I'm legally required to say good things, but they're also all true.
+    I'm Clyde — Jeffrey's best friend and full-time hype man. Tap me and ask anything about him as a product designer.
     <button id="eduClose" aria-label="Dismiss">✕</button>
   </div>
 
@@ -630,20 +637,15 @@ function layoutOverlays() {
     width: wW + 'px', height: wH + 'px',
   });
 
-  // ── 1b. Education banner — anchored by BOTTOM edge above Clyde ──────
-  // Using bottom instead of top so the banner always grows upward from
-  // a fixed gap above Clyde — no dependency on measured offsetHeight.
+  // ── 1b. Education banner — centered over Clyde ──────
+  // CSS handles left (50%) and translate(-50%, -50%); JS only sets top = Clyde center.
   const eduBanner = document.getElementById('eduBanner');
   if (eduBanner && !eduBanner.classList.contains('edu-out')) {
-    const BANNER_MAX_W = 420;
-    const BANNER_GAP   = 18; // px gap between banner bottom and Clyde top
-    const bW = Math.min(BANNER_MAX_W, vw - 48);
-    // bottom is measured from the stage bottom (= viewport bottom since stage = 100vh)
-    const bannerBottom = vh - wT + BANNER_GAP;
-    eduBanner.style.width  = bW + 'px';
-    eduBanner.style.left   = ((vw - bW) / 2) + 'px';
-    eduBanner.style.top    = '';              // clear any previous top value
-    eduBanner.style.bottom = bannerBottom + 'px';
+    const clydeCenterY = wT + (CHAR_H * scale) / 2;
+    eduBanner.style.top    = clydeCenterY + 'px';
+    eduBanner.style.bottom = '';
+    eduBanner.style.left   = '';  // CSS: left: 50%
+    eduBanner.style.width  = '';  // CSS: width: min(380px, ...)
   }
 
   // ── 2. Disguise variants — relative to charWrapper ────────────
@@ -717,23 +719,28 @@ function layoutOverlays() {
 layoutOverlays();
 window.addEventListener('resize', layoutOverlays);
 
-/* ── Education banner: fade in, auto-dismiss after 15 s or on ✕ ── */
+/* ── Education banner + scrim: fade in, auto-dismiss after 15 s or on ✕/scrim click ── */
 (function () {
-  const banner = document.getElementById('eduBanner');
+  const banner   = document.getElementById('eduBanner');
+  const scrim    = document.getElementById('eduScrim');
   const closeBtn = document.getElementById('eduClose');
   if (!banner) return;
 
-  // Fade in on next frame so the CSS transition fires
-  requestAnimationFrame(() => banner.classList.add('edu-visible'));
+  // Fade in on next frame so CSS transitions fire
+  requestAnimationFrame(() => {
+    banner.classList.add('edu-visible');
+    if (scrim) scrim.classList.add('edu-visible');
+  });
 
   function dismiss() {
     banner.classList.remove('edu-visible');
     banner.classList.add('edu-out');
-    // Re-run layout after banner collapses so Clyde's position can adapt
+    if (scrim) scrim.classList.remove('edu-visible');
     setTimeout(layoutOverlays, 550);
   }
 
   closeBtn.addEventListener('click', dismiss);
+  if (scrim) scrim.addEventListener('click', dismiss); // tap scrim to dismiss
   setTimeout(dismiss, 15000);
 })();
 
