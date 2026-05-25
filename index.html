@@ -35,9 +35,46 @@
       pointer-events: none; z-index: 100; opacity: 0.4;
     }
 
+    .banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--green);
+      z-index: 200;
+      opacity: 0;
+      animation: fadeDown 0.7s ease 0.05s forwards;
+    }
+
+    .banner-text {
+      font-family: 'Archivo Narrow', sans-serif;
+      font-weight: 700;
+      font-size: clamp(11px, 1.1vw, 14px);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--black);
+    }
+
+    .banner-text a {
+      color: var(--black);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: opacity 0.2s ease;
+    }
+
+    .banner-text a:hover { opacity: 0.6; }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     .page {
       display: flex; height: 100vh; width: 100vw;
       align-items: center; justify-content: center;
+      padding-top: 50px;
     }
 
     .inner {
@@ -205,6 +242,10 @@
   </style>
 </head>
 <body>
+
+  <div class="banner">
+    <p class="banner-text">Speak to my best friend about my work: <a href="https://talktoclyde.ai" target="_blank" rel="noopener">talktoclyde.ai</a></p>
+  </div>
 
   <div class="page">
     <div class="inner">
