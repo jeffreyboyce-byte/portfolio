@@ -429,6 +429,15 @@
       vertical-align: middle;
       flex-shrink: 0;
     }
+    #eduDisclaimer {
+      display: block;
+      font-family: 'DM Sans', 'Google Sans', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--coral);
+      margin-bottom: 8px;
+    }
     #eduClose {
       position: absolute;
       top: 11px; right: 13px;
@@ -463,7 +472,8 @@
 
   <!-- Education banner — visible on load, auto-dismisses after 15 s -->
   <div id="eduBanner" role="status">
-    I'm Clyde — Jeffrey's best friend, and frankly his biggest fan. He built me to sit here looking cute and fuzzy and to talk about how great he is as a product designer. Tap me to wake me up and ask anything — I'm legally required to say good things, but they're also all true.
+    <span id="eduDisclaimer">BEST VIEWED ON CHROME DESKTOP</span>
+    I'm Clyde — Jeffrey's best friend. He built me to sit here looking cute and fuzzy and to talk about how great he is as a product designer. Tap me to wake me up and ask anything — I'm legally required to say good things, but they're also all true.
     <button id="eduClose" aria-label="Dismiss">✕</button>
   </div>
 
