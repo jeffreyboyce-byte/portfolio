@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio &mdash; Jeffrey Perona Boyce</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Staatliches&family=Archivo+Narrow:wght@400;700&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Google+Sans+Code:wght@300..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=1787512789" />
+  <!-- Case studies start hidden via the "pre-reveal" class baked directly
+       into their markup (see below) so there's no flash of visible
+       content before the reveal script attaches — the class has to exist
+       before first paint, not get added by JS after the fact. If
+       JavaScript is off (so nothing ever reveals them), fall back to
+       showing everything. -->
+  <noscript>
+    <style>
+      .case-study.pre-reveal .case-media,
+      .case-study.pre-reveal .case-text { opacity: 1 !important; }
+    </style>
+  </noscript>
+</head>
+<body>
+
+  <div class="banner">
+    <p class="banner-text">Speak to my best friend about my work: <a href="https://talktoclyde.ai" target="_blank" rel="noopener">talktoclyde.ai</a></p>
+  </div>
+
+  <nav class="site-nav">
+    <div class="site-nav-inner">
+      <a class="nav-link" href="index.html">Home</a>
+      <a class="nav-link" href="about.html">About</a>
+      <a class="nav-link is-current" href="portfolio.html">Portfolio</a>
+      <a class="nav-link nav-link-hidden" href="gorilla.html">Gorilla</a>
+    </div>
+  </nav>
+
+  <div class="year-spine" aria-hidden="true">
+    <span class="year-spine-value" id="year-spine-value">2026</span>
+  </div>
+
+  <a href="#" class="scroll-arrow" id="scroll-arrow" aria-label="Scroll to the next case study">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 12L18.59 10.59L13 16.17V4H11V16.17L5.41 10.59L4 12L12 20L20 12Z" fill="currentColor"/>
+    </svg>
+  </a>
+
+  <div class="page portfolio-page">
+    <div class="portfolio-inner">
+
+      <!-- On mobile, .gorilla-wrap switches from position:absolute (JS-
+           positioned against "Gemini on Glasses" regardless of DOM order)
+           to position:static, meaning it renders wherever it actually sits
+           in the document instead — placed first, ahead of every case
+           study, per an explicit request to have it appear before the
+           "Gemini on Glasses" content rather than directly after it.
+           Desktop is unaffected either way since position:absolute takes
+           it out of normal flow there. -->
+      <div class="gorilla-wrap" aria-hidden="true">
+        <div class="gorilla-lottie" aria-hidden="true"></div>
+      </div>
+
+      <section class="case-study no-media pre-reveal" data-year="2026">
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title gorilla-align-title">
+              <span class="line1">GEMINI ON</span>
+              <span class="line2">GLASSES</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">AI Design Lead &amp; Program DRI</p>
+              <p class="case-role-sub">Multimodal Experience &bull; Gemini on Android XR &bull; Launching Fall 2026</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">Gemini on smart glasses: audio-first, no screen, no established playbook. Every convention Gemini relied on assumed a phone &mdash; no confirmation it heard you, no clear way to end a turn. I traded actual latency for perceived, replaced the fixed mic timeout with a two-tier system, and adapted sixteen tools for the form factor.</p>
+          <div class="case-results">
+            <p class="case-results-label">Notable Results</p>
+            <div class="case-tags">
+              <span class="case-tag">Default Across Gemini Live</span>
+              <span class="case-tag">4 Teams Aligned</span>
+              <span class="case-tag">16 Tools Adapted</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="case-study pre-reveal" data-year="2025">
+        <div class="case-media"><img src="src/glvm.gif" alt="Google Level Voice Match enrollment screen" /></div>
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title">
+              <span class="line1">GOOGLE LEVEL</span>
+              <span class="line2">VOICE MATCH</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">AI Design Lead &amp; Cross-Org Strategy</p>
+              <p class="case-role-sub">Enrollment, Consent, Management &bull; Assistant &rarr; Gemini &bull; Launched Q4 2025</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">Voice Match is how Google products recognize you when you speak. Enrollment had fragmented into 72 separate flows &mdash; users re-enrolled from scratch on every new device, costing 30% of enrolled users year over year. I collapsed it into one consent that carries across devices, running four workstreams specced for six partner teams to implement.</p>
+          <div class="case-results">
+            <p class="case-results-label">Notable Results</p>
+            <div class="case-tags">
+              <span class="case-tag">72 Flows &rarr; 1</span>
+              <span class="case-tag">51% Drop-off Eliminated</span>
+              <span class="case-tag">6 Partner Teams Integrated</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="case-study media-right pre-reveal" data-year="2025">
+        <div class="case-media"><img src="src/customized-voice.gif" alt="Gemini Live voice selection screen" /></div>
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title">
+              <span class="line1">GEMINI</span>
+              <span class="line2">VOICE SELECTION</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">AI Design Lead</p>
+              <p class="case-role-sub">Voice Identity, Onboarding, Controls &bull; Gemini Live &bull; H2 2026</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">Gemini Live lets you choose the voice you talk to. But that identity lived in settings, disconnected from the conversation it defined &mdash; users loved the voice they picked, then couldn't find it again. I moved selection into the Live experience itself, testing three entrypoints and three control patterns before landing on an integrated model with educational onboarding.</p>
+          <div class="case-results">
+            <p class="case-results-label">Current Status</p>
+            <div class="case-tags">
+              <span class="case-tag">6 Patterns Tested</span>
+              <span class="case-tag">3 Executive Reviews</span>
+              <span class="case-tag">H2 Roadmap Priority</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="case-study pre-reveal" data-year="2024">
+        <div class="case-media"><img src="src/omnient-final.gif" alt="Circle to Search demo on stage" /></div>
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title">
+              <span class="line1">Circle to</span>
+              <span class="line2">search</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">Design Lead</p>
+              <p class="case-role-sub">Voice Input, Refinement, Transcription &bull; Assistant &times; Search &times; Samsung &bull; Launched Q3 2024</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">Circle anything on your screen, then refine the result by image, text, or voice. Image and text refined in place &mdash; voice threw you to a blank full-screen page and discarded what you'd just circled. Brought in from Assistant to advise, I authored the alternative instead, aligned Search and Assistant in four weeks under code-complete pressure, then resolved six open decisions before design lock.</p>
+          <div class="case-results">
+            <p class="case-results-label">Notable Results</p>
+            <div class="case-tags">
+              <span class="case-tag">12% of All Queries</span>
+              <span class="case-tag">25M Launch Devices</span>
+              <span class="case-tag">100+ Devices Today</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="case-study media-right pre-reveal" data-year="2024">
+        <div class="case-media case-media-bare">
+          <div class="tts-composition">
+            <div class="tts-node tts-node-line-height"><img src="src/tts-line-height.png" alt="Line height selection menu" /></div>
+            <div class="tts-node tts-node-player"><img src="src/tts-player.png" alt="Text-to-speech player" /></div>
+            <div class="tts-node tts-node-font-size"><img src="src/tts-font-size.png" alt="Font size stepper" /></div>
+            <div class="tts-node tts-node-content-highlighting"><img src="src/tts-content-highlighting.png" alt="Content highlighting theme picker" /></div>
+            <div class="tts-node tts-node-font-selection"><img src="src/tts-font-selection.png" alt="Font selection menu" /></div>
+            <div class="tts-node tts-node-speed"><img src="src/tts-speed.png" alt="Playback speed menu" /></div>
+            <div class="tts-node tts-node-speed-2"><img src="src/tts-speed-2.png" alt="Playback speed stepper" /></div>
+            <div class="tts-node tts-node-voice-selection"><img src="src/tts-voice-selection.png" alt="Voice selection screen" /></div>
+          </div>
+        </div>
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title">
+              <span class="line1">text-to-speech</span>
+              <span class="line2">DESIGN SYSTEM</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">Design Lead &amp; System Owner</p>
+              <p class="case-role-sub">Workshop &rarr; Components &rarr; Adoption &bull; Google Design Platform &bull; Launched Q3 2024</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">Text-to-speech looked and behaved differently in every Google product. Harmonizing it meant getting teams that had never shared a pattern into one room &mdash; so I ran a cross-functional workshop with designers, PMs, and researchers to define what a shared voice experience should be. I directed two designers building out the component library, and the system that came out of it &mdash; voice settings, a long-form player, display controls &mdash; shipped across four surfaces.</p>
+          <div class="case-results">
+            <p class="case-results-label">Notable Results</p>
+            <div class="case-tags">
+              <span class="case-tag">Published to Google Material</span>
+              <span class="case-tag">4 Products Adopted</span>
+              <span class="case-tag">Informed Voice Selection</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="case-study pre-reveal" data-year="2016">
+        <div class="case-media case-media-no-border"><img src="src/YouTubeGo.gif" alt="YouTube Go offline download screen" /></div>
+        <div class="case-text">
+          <div class="case-title-block">
+            <h2 class="case-title">
+              <span class="line1">YOUTUBE</span>
+              <span class="line2">GO</span>
+            </h2>
+            <div class="case-role">
+              <p class="case-role-title">Feature Design Lead</p>
+              <p class="case-role-sub">Offline Experience, Storage &bull; YouTube for NBU &bull; Launched Q3 2016</p>
+            </div>
+          </div>
+          <div class="case-divider"></div>
+          <p class="case-desc">YouTube rebuilt for 2G, pay-as-you-go data, and low-end phones. Eight field trips across India, Indonesia, and the Philippines found users so overwhelmed they feared one wrong tap would break the phone. The feed I proposed deprioritized the metadata feeding watch time &mdash; YouTube's north-star metric &mdash; so I argued it through leadership: for a user who won't tap, watch time is already zero.</p>
+          <div class="case-results">
+            <p class="case-results-label">Notable Results</p>
+            <div class="case-tags">
+              <span class="case-tag">550M Downloads</span>
+              <span class="case-tag">130+ Countries</span>
+              <span class="case-tag">New Material Pattern</span>
+            </div>
+          </div>
+          <button type="button" class="construction-btn" aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.9 21L13.425 15.525L15.525 13.425L21 18.9L18.9 21ZM5.1 21L3 18.9L9.9 12L8.2 10.3L7.5 11L6.225 9.725V11.775L5.525 12.475L2.5 9.45L3.2 8.75H5.25L4 7.5L7.55 3.95C7.88333 3.61667 8.24167 3.375 8.625 3.225C9.00833 3.075 9.4 3 9.8 3C10.2 3 10.5917 3.075 10.975 3.225C11.3583 3.375 11.7167 3.61667 12.05 3.95L9.75 6.25L11 7.5L10.3 8.2L12 9.9L14.25 7.65C14.1833 7.46667 14.125 7.275 14.075 7.075C14.0417 6.875 14.025 6.675 14.025 6.475C14.025 5.49167 14.3583 4.66667 15.025 4C15.7083 3.31667 16.5417 2.975 17.525 2.975C17.775 2.975 18.0083 3 18.225 3.05C18.4583 3.1 18.6917 3.175 18.925 3.275L16.45 5.75L18.25 7.55L20.725 5.075C20.8417 5.30833 20.9167 5.54167 20.95 5.775C21 5.99167 21.025 6.225 21.025 6.475C21.025 7.45833 20.6833 8.29167 20 8.975C19.3333 9.64167 18.5083 9.975 17.525 9.975C17.325 9.975 17.125 9.95833 16.925 9.925C16.725 9.89167 16.5333 9.83333 16.35 9.75L5.1 21Z" fill="currentColor"/></svg>
+            <span>Case Study Under Construction</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <div class="footer-inner">
+      <p class="footer-links">
+        <a href="https://raw.githubusercontent.com/jeffreyboyce-byte/portfolio/main/jeffrey-perona-boyce-resume.pdf" target="_blank" rel="noopener">Resume</a>
+        <span class="sep">&bull;</span>
+        <a href="https://linkedin.com/in/jeffreyperonaboyce" target="_blank" rel="noopener">LinkedIn</a>
+        <span class="sep">&bull;</span>
+        <a id="email-link" href="#">
+          <svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:2px;" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="email-text"></span>
+        </a>
+      </p>
+      <p class="footer-text" id="footer-text"></p>
+    </div>
+  </div>
+
+  <!-- Case study overlay: shared by every "Case Study" button on this page
+       (see portfolio.js) rather than one instance per case study — only
+       one can ever be open at a time, so a single hidden-by-default
+       overlay with its iframe src swapped in on click is enough. Each
+       button's own href is used as-is; the Figma /deck/ URL is wrapped
+       into Figma's public /embed endpoint at click time. Sits as a direct
+       child of <body> so its position:fixed covers the full viewport
+       regardless of where the trigger button lives in the page. -->
+  <div class="case-study-overlay" id="case-study-overlay" aria-hidden="true">
+    <div class="case-study-overlay-backdrop" data-overlay-close></div>
+    <div class="case-study-overlay-panel" role="dialog" aria-modal="true" aria-label="Case study presentation">
+      <button class="case-study-overlay-close" id="case-study-overlay-close" type="button" aria-label="Close case study">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <iframe class="case-study-overlay-iframe" id="case-study-overlay-iframe" src="" title="Case study presentation" allow="fullscreen" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <script src="src/json/portfolio-gorilla-talk-1.data.js"></script>
+  <script src="src/json/portfolio-gorilla-talk-2.data.js"></script>
+  <script src="src/json/portfolio-gorilla-talk-3.data.js"></script>
+  <script src="lottie.min.js"></script>
+  <script src="site.js?v=1787512789"></script>
+  <script src="portfolio.js?v=1787512789"></script>
+
+</body>
+</html>

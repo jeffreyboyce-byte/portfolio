@@ -1,0 +1,1689 @@
+/* This site is plain multi-page HTML — every nav click is a real, full
+   browser navigation (no client-side router), which is why each page's
+   entrance animations (case-study reveal, gorilla intro, etc.) replay from
+   scratch on every load, and why the jump from a content-rich page straight
+   to the intentionally sparse Gorilla page (nav + one static image, nothing
+   else) can read as the page having "gone blank"/reloaded — because,
+   accurately, it did just reload. That's normal for a site built this way,
+   but it's a rough, hard cut without help from the browser: a plain
+   full-page navigation swaps the entire document in one frame with nothing
+   softening the transition.
+   Cross-document View Transitions (a native, JS-free browser feature) fix
+   exactly this: opting in below tells supporting browsers (Chrome and
+   Safari, as of when this was written) to automatically crossfade between
+   the old and new page's rendered frame across a normal <a href> multi-page
+   navigation, rather than a hard cut straight to whatever's ready first
+   (whitespace, unstyled content, etc). It requires no JS and no change to
+   how navigation works — this line is the entire opt-in. Browsers without
+   support (older Safari/Firefox) simply keep today's behavior. */
+@view-transition {
+  navigation: auto;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #080808;
+  --green: #3dffa0;
+  --green-glow: rgba(61,255,160,0.25);
+  --green-glow-strong: rgba(61,255,160,0.5);
+  --white: #ffffff;
+}
+
+html, body {
+  min-height: 100%; width: 100%;
+  background: var(--black);
+  color: var(--green);
+  font-family: 'Archivo Narrow', sans-serif;
+  /* The tts-design-system graphic (see .tts-composition in the Portfolio
+     rules below) renders its 8 PNGs at their full native size and lets
+     them bleed past their column on purpose — this clips that bleed at
+     the viewport edge instead of letting it widen the whole page and add
+     a page-wide horizontal scrollbar. */
+  overflow-x: hidden;
+}
+
+body {
+  display: flex; flex-direction: column;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat; background-size: 150px;
+  pointer-events: none; z-index: 100; opacity: 0.4;
+}
+
+.banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green);
+  z-index: 200;
+}
+
+.banner-text {
+  font-family: 'Archivo Narrow', sans-serif;
+  font-weight: 700;
+  font-size: clamp(11px, 1.1vw, 14px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--black);
+}
+
+.banner-text a {
+  color: var(--black);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s ease;
+}
+
+.banner-text a:hover { opacity: 0.6; }
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Primary nav */
+/* Solid black band (not just the link row) so page content that scrolls
+   underneath the fixed nav disappears behind it instead of showing through. */
+.site-nav {
+  position: fixed;
+  top: 50px; left: 0; right: 0;
+  height: 80px;
+  display: flex; align-items: center;
+  background: var(--black);
+  z-index: 190;
+}
+
+.site-nav-inner {
+  max-width: 1200px; width: 100%; margin: 0 auto;
+  /* 100px — the actual "Variant A / Spacious Reading" margin from Figma
+     (80px -> 100px), ported directly rather than scaled. Kept in lockstep
+     with .inner / .about-inner / .portfolio-inner / .footer-inner below so
+     the nav links and footer stay edge-aligned with whichever page's
+     content is showing. */
+  padding: 0 100px;
+  /* This 40px is a dead fallback in practice — every real width either
+     matches the mobile media query below (gap:24px) or the >=769px one
+     near the end of the file (a clamp scaling off the Figma mockup) — but
+     something has to be here for the rare case neither applies. */
+  display: flex; gap: 40px;
+}
+
+.nav-link {
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(10.4px, 1.04vw, 13.6px); letter-spacing: 0.1em;
+  text-transform: uppercase; text-decoration: none;
+  color: rgba(61,255,160,0.5);
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current { color: var(--green); }
+
+/* "Gorilla" hidden from the primary navbar for now, per an explicit
+   request — the page itself (and its own nav, which still carries this
+   same link/class) is untouched and still reachable directly by URL, this
+   just removes the link from view. display:none rather than deleting the
+   markup so unhiding later is a one-line class removal, not restoring
+   markup from scratch. */
+.nav-link-hidden {
+  display: none;
+}
+
+.page {
+  display: flex; flex: 1 0 auto; width: 100vw;
+  align-items: center; justify-content: center;
+  padding-top: 130px;
+  position: relative;
+}
+
+.inner {
+  display: grid; grid-template-columns: auto 1fr;
+  gap: 0 52px; align-items: start;
+  /* 100px margin — see .site-nav-inner above for the Variant A rationale. */
+  max-width: 1200px; width: 100%; padding: 0 100px;
+}
+
+/* Name */
+.name-block {
+  display: flex; flex-direction: column; line-height: 0.88;
+  opacity: 0;
+  animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+}
+
+.name-part {
+  font-family: 'Staatliches', sans-serif; font-weight: 400;
+  font-size: clamp(96px, 12vw, 172px); letter-spacing: -0.01em;
+  color: var(--green); text-transform: uppercase; display: block;
+  text-shadow: 0 0 80px rgba(61,255,160,0.15), 0 2px 0 rgba(0,0,0,0.5);
+}
+
+/* Info panel */
+.info-panel {
+  display: flex; flex-direction: column; gap: 0;
+  opacity: 0; padding-top: 0.08em;
+  animation: slideRight 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s forwards;
+}
+
+.title-block { margin-bottom: 36px; }
+
+.role-title {
+  font-family: 'Staatliches', sans-serif; font-weight: 400;
+  font-size: clamp(28px, 3.5vw, 52px); text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--green); line-height: 1;
+}
+
+.companies-block { display: flex; flex-direction: column; margin-bottom: 48px; }
+
+.company-item {
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(16px, 1.9vw, 26px); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--white);
+  padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: relative; overflow: hidden; cursor: default;
+  transition: color 0.2s ease;
+}
+
+.company-item:first-child { border-top: 1px solid rgba(255,255,255,0.07); }
+
+.company-item::after {
+  content: ''; position: absolute; left: -100%; top: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(61,255,160,0.06), transparent);
+  transition: left 0.4s ease;
+}
+
+.company-item:hover { color: var(--green); }
+.company-item:hover::after { left: 100%; }
+
+/* Email button */
+.contact-block { display: flex; flex-direction: column; }
+
+.email-btn {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 18px 30px; border: 2px solid var(--green); border-radius: 100px;
+  background: transparent; color: var(--green); text-decoration: none;
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(12px, 1.3vw, 17px); letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer;
+  position: relative; overflow: hidden; width: fit-content;
+  transition: color 0.35s ease, box-shadow 0.35s ease, transform 0.2s ease;
+  /* Explicitly above the gorilla (z-index 10) so the CTA never gets
+     visually clipped by it, even though the company-list divider lines
+     just above it are intentionally left behind the gorilla. */
+  z-index: 15;
+}
+
+.email-btn::before {
+  content: ''; position: absolute; inset: 0; background: var(--green);
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.76,0,0.24,1);
+  border-radius: 100px; z-index: 0;
+}
+
+.email-btn:hover::before { transform: scaleX(1); }
+.email-btn:hover {
+  color: var(--black);
+  box-shadow: 0 0 40px var(--green-glow-strong), 0 0 80px var(--green-glow);
+  transform: translateY(-2px);
+}
+.email-btn:active { transform: translateY(0) scale(0.98); }
+
+.email-btn::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 100px;
+  border: 1px solid var(--green); opacity: 0; transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.5s ease;
+}
+.email-btn:hover::after { opacity: 0.35; transform: scale(1.04); }
+
+.email-icon {
+  width: 20px; height: 20px; flex-shrink: 0;
+  position: relative; z-index: 1; transition: transform 0.3s ease;
+}
+.email-btn:hover .email-icon { transform: rotate(-5deg) scale(1.1); }
+.email-text { position: relative; z-index: 1; }
+
+/* Footer */
+/* Normal document flow (not fixed) so it sticks to the bottom of short,
+   single-viewport pages via the body flex layout, but simply flows after
+   the content on taller pages instead of overlaying it while scrolling. */
+.footer-bar {
+  display: flex; justify-content: center;
+  flex-shrink: 0;
+  padding: 0 0 32px;
+  position: relative; z-index: 20;
+}
+
+.page { padding-bottom: 32px; }
+
+/* Gorilla page only: .footer-bar's own 32px bottom padding (below, in the
+   base .footer-bar rule) is real empty space between the footer's own
+   content and the true bottom edge of the browser window — invisible
+   dead space on every other page, but on this page it directly worked
+   against the "anchor to the very bottom of the browser, no gap" request,
+   since the gorilla is now positioned to reach exactly window.innerHeight
+   (see site.js) while the footer bar it crosses over still padded itself
+   30-odd px short of that same edge. Zeroed out here, scoped via a
+   following-sibling selector (.footer-bar isn't a descendant of
+   .gorilla-page — they're sibling children of <body>) so every other
+   page's footer keeps its normal padding untouched. */
+.gorilla-page ~ .footer-bar {
+  padding-bottom: 0;
+}
+
+.footer-inner {
+  /* 100px margin — see .site-nav-inner above for the Variant A rationale. */
+  max-width: 1200px; width: 100%; padding: 0 100px;
+}
+
+.footer-text,
+.footer-links {
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(61,255,160,0.45);
+}
+
+/* line-height/min-height reserve this line's space even before site.js
+   populates its text (it starts as an empty <p>, which some browsers
+   collapse to 0 height with no content at all — not just short — rather
+   than the usual one-line-box "strut" empty blocks normally keep). That
+   collapse was shrinking .footer-bar, which shrinks .page (flex:1 fills
+   whatever's left), which is what the gorilla's "bottom: 100px" is
+   anchored to — so the empty-to-populated swap was shifting the gorilla
+   up by however many pixels this line is tall, as a real, visible jump
+   at full opacity whenever the browser happened to paint before site.js
+   ran. Reserving the space outright removes the shift instead of just
+   racing it. */
+/* Footer font sizes are scaled to 80% of their original values throughout
+   this file (base clamp() here, and the flat min-width:769px override
+   below) per an explicit request to shrink just the footer text. */
+.footer-text { font-size: clamp(8.8px, 0.8vw, 11.2px); line-height: 1.4; min-height: 1.4em; color: rgba(255,255,255,0.25); }
+.footer-links { font-size: clamp(10.4px, 1.04vw, 13.6px); }
+
+.footer-links { margin-bottom: 5px; pointer-events: all; }
+
+.footer-links a {
+  color: rgba(61,255,160,0.45); text-decoration: none;
+  transition: color 0.2s ease;
+}
+.footer-links a:hover { color: var(--green); }
+
+.footer-links .sep { color: rgba(61,255,160,0.25); margin: 0 7px; }
+
+/* Gorilla illustration */
+/* Positioned relative to .page (not the viewport), so it sits in exactly
+   the same spot it always has and doesn't add any height to the grid/flow
+   content around it — meaning name/bio/case-study text keeps the same
+   position it had before. Because it's absolute (not fixed), it scrolls
+   up the page along with everything else instead of staying glued to the
+   viewport. */
+.gorilla-wrap {
+  position: absolute;
+  /* "right" here is just the pre-JS fallback — site.js measures the
+     page's own content container (.inner/.about-inner/.portfolio-inner,
+     whichever exists) live and overwrites this with a value pinned to
+     that container's right edge instead. This used to be a vw-based
+     clamp() measured against the viewport, which tracked the container
+     fine only up to the point .inner's own max-width:1200px cap kicked
+     in (~1312px viewport) — past that, the container stopped growing but
+     this kept scaling with the window, so on a wide monitor the gorilla
+     drifted further and further from the text with nothing tying it
+     back. Anchoring to the container's real edge fixes that at any
+     width, narrower than the cap or far past it.
+     "width" is a flat value for the same reason — 27vw scaled the
+     gorilla itself down on any desktop window narrower than the cap,
+     shrinking it right along with a container that, per the above, was
+     never actually its real point of reference. */
+  right: 64px;
+  /* "bottom: 100px" anchors this to .page's bottom edge, and .page fills
+     whatever height the flex column body has left after the footer — so
+     if the footer's rendered height changes, .page's height changes too,
+     and this shifts with it. That used to be a real bug: .footer-text
+     started as an empty <p> until site.js populated it a beat later, which
+     could collapse .footer-bar's height and cause a fully-opaque jump on
+     load/navigation. Fixed at the source via .footer-text's min-height
+     below, so .footer-bar's height — and therefore this element's position
+     — is correct from the very first paint, no JS required.
+     A "gorilla-ready" reveal gate (opacity:0 until site.js has run) used
+     to be here for a now-fixed reason (the footer collapsing before its
+     text populated) and was removed once that was fixed at the source.
+     It's back below for an unrelated, still-real reason: "right" above
+     is only ever a rough pre-JS fallback for the container-anchored
+     value site.js computes, and with that gap now several hundred
+     pixels, painting at the fallback first and jumping to the real
+     value read as a visible flicker on load/navigation. */
+  bottom: 100px;
+  /* Now calibrated against TWO real Figma anchors instead of one: 500px
+     wide at the 1200px mockup and (it turns out, per the "500 -> 600 at
+     1400" ratio below) ~556px at the 1400px mockup — both mockups scale
+     every non-chrome element by a uniform 0.9x ratio (1200-value =
+     0.9 x 1400-value), so rather than solving two-point algebra per
+     property, every value below is expressed as f(w) = 0.3V + 0.05V*vw
+     where V is that property's value at 1400px width — this lands on
+     exactly 0.9V at 1200px and exactly V at 1400px, and keeps scaling
+     linearly past 1400px up to the cap. V here is 500px (the mockup's
+     gorilla width at 1400px), so floor/cap below are 0.684V/1.2V — see
+     the comment above .nav-link in the min-width:769px block near the
+     end of this file for the full derivation. Safe to leave unscoped to
+     that block (rather than needing its own min-width:769px scope): the
+     mobile media query below unconditionally overrides `width` for
+     <=768px regardless of what this resolves to, so there's nothing for
+     a narrower floor here to accidentally break. */
+  width: clamp(342px, calc(150px + 25vw), 600px);
+  aspect-ratio: 716 / 800;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gorilla-wrap.gorilla-ready {
+  opacity: 1;
+}
+
+.gorilla-wrap img,
+.gorilla-wrap .gorilla-placeholder {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain; object-position: bottom;
+}
+
+.gorilla-wrap .gorilla-lottie {
+  /* Same 716x800 aspect ratio as .gorilla-wrap itself (the Lottie source
+     dimensions), so filling the box exactly reproduces what object-fit:
+     contain did for the old <img> — no distortion, no letterboxing. */
+  display: block; width: 100%; height: 100%;
+  overflow: visible;
+  /* The Lottie source draws the gorilla noticeably smaller within its own
+     716x800 canvas than the old PNG did (the PNG's artwork ran edge to
+     edge; measured across all three clips, the animated character's own
+     bounding box only ever covers about x:3-83% / y:19-82% of the
+     canvas). Scaled up and anchored to bottom-center so it reads closer
+     to the original static gorilla's size instead of looking shrunken
+     inside the same box. 1.5x is a deliberate, explicit request to push
+     past the "safe" ~1.07-1.2x range that keeps the wave gesture's full
+     extent inside the box on the left side (where the content's bbox
+     sits least centered) — at 1.5x the raised arm does extend past the
+     wrap's nominal left edge during the widest part of the wave.
+     .gorilla-wrap itself has no overflow:hidden, so that overflow isn't
+     clipped, and it's been checked against the body text at every
+     breakpoint (see GORILLA_TEXT_CLEARANCE in site.js) down to the
+     narrowest desktop width with no visible collision — but it's closer
+     to the real ceiling than 1.2x was, so re-check here first if the
+     surrounding copy ever changes length/width.
+     Applied here on the wrapper div rather than the lottie-generated
+     <svg> itself — lottie-web sets its own inline transform (a
+     translate3d it uses for internal positioning) directly on the svg
+     element, and an inline style always wins over an external stylesheet
+     rule regardless of selector specificity, so a transform placed on the
+     svg selector here would simply be overridden and silently do
+     nothing. */
+  transform: scale(1.5);
+  transform-origin: 50% 100%;
+}
+
+/* Gorilla page used to carry its own enlarge override here (first a x1.5,
+   then a further x3 on top of that), which was later fully reverted so
+   this page matched every other page's size exactly. Re-added once more
+   per an explicit "enlarge the animation on this page by 50%" request —
+   scoped to .gorilla-page only, so Home/About/Portfolio keep the shared
+   base .gorilla-wrap width above untouched. Every term of the base clamp()
+   is scaled by 1.5x (150->225, 25vw->37.5vw, 342->513, 600->900) rather
+   than wrapping the whole thing in an outer calc(), so it stays a plain
+   clamp() the fit-shrink JS can read a real natural width/height from.
+   site.js's isGorillaPage fit check (see site.js) still applies on top of
+   this as a safety net, shrinking the box on any viewport too short to fit
+   even this larger size clear of the nav — the maxTop side no longer needs
+   protecting since this page's own maxTop deliberately crosses over the
+   footer instead of keeping clear of it (see site.js). */
+@media (min-width: 769px) {
+  .gorilla-page .gorilla-wrap {
+    width: clamp(513px, calc(225px + 37.5vw), 900px);
+  }
+}
+
+/* Chest-up reveal, on load only: .gorilla-reveal-mask crops .gorilla-wrap's
+   box down to roughly head-to-chest on the character, given the lottie
+   artwork's own content sits within about y:19-82% of its 800-tall canvas
+   (see the .gorilla-lottie comment above) — and .gorilla-body restores a
+   full-height coordinate space *inside* that window so .gorilla-lottie
+   itself still renders at its normal full size and position, just with
+   the portions outside the mask clipped away around it rather than
+   actually shrunk.
+   The mask's BOTTOM edge is what actually defines "chest-up": pinned at
+   55% of .gorilla-wrap's own height. Its TOP edge, though, can't be pinned
+   at .gorilla-wrap's own top (0%) the way a naive "crop the top half"
+   reading would suggest — .gorilla-lottie carries its own 1.5x
+   transform:scale anchored bottom-center (see that rule above), which
+   pushes the character's actual rendered top edge as much as ~43% of the
+   wrap's height ABOVE the wrap's own nominal top (measured worst case: the
+   talk/thinking clips' shared thought-bubble frame, bbox top 36.67 of 800
+   pre-scale). A mask starting at 0% clips straight through that overshoot,
+   cutting the head (and the thought bubble) off. A -50% top was tried
+   first (comfortably past the measured 43% worst case, on paper) but still
+   read as clipping the thought bubble in practice — real rendering doesn't
+   line up with the sampled bbox math precisely enough to cut it that
+   close. Extended further to -90%, well past any plausible reading of the
+   measured worst case, so there's real slack left over even if the true
+   overshoot is somewhat worse than what was sampled.
+   Extending the mask upward moves its own containing-block height too
+   (from 55% to 90%+55% = 145% of the wrap), so .gorilla-body's top/height
+   — both percentages of the MASK's own box, not the wrap's — are rebalanced
+   (divide by 1.45, the mask's new height as a fraction of the wrap's) so
+   its rendered position and size still land on exactly the wrap's own full
+   coordinate space (top 0, height 100%): the crop changed, not where or
+   how big .gorilla-lottie itself renders. This top-extension percentage is
+   scale-invariant — it doesn't need to change if .gorilla-wrap's own size
+   changes (see the Gorilla-page-only enlarge below), since it's derived
+   entirely from .gorilla-lottie's own fixed 1.5x scale/transform-origin,
+   not from the wrap's absolute pixel size.
+   The mask's LEFT/RIGHT edges needed the same treatment, discovered from a
+   live screenshot after the top-only fix shipped: transform-origin's
+   horizontal component is 50% (center), not an edge, so the 1.5x scale
+   pushes content past BOTH the wrap's left and right edges, not just its
+   top — and, same as the top case, .gorilla-wrap itself has no
+   overflow:hidden, but .gorilla-reveal-mask does, at the same width:100%
+   as the wrap, clipping straight through the overshoot on whichever side
+   it happens to be worse on. Measured directly against the real rendered
+   SVG content (getBBox() mapped to screen coordinates via
+   getScreenCTM(), not the sampled-bbox math the top fix started from):
+   worst case is the thinking clip's thought bubble again, extending
+   ~18.2% of the wrap's own width past the mask's left edge (the right
+   side never overshoots — the bubble sits up and to the LEFT of the
+   character, consistent with .gorilla-lottie's own artwork not being
+   perfectly centered in its canvas). Extended left-only to -30% (130%
+   total width, not a symmetric 160%) rather than to the exact measured
+   18.2% — comfortably past that measured worst case, for the same reason
+   the top extension went well past its own measured worst case: real
+   rendering doesn't track sampled bbox math closely enough to cut a
+   margin that fine. Left-only, not symmetric: see the width comment on
+   .gorilla-reveal-mask below for why extending the right side too caused
+   its own, separate real-viewport-edge clipping regression at wide
+   desktop widths.
+   The entrance itself is a plain CSS @keyframes animation on .gorilla-body
+   (not JS) — see the .no-entrance-anim rule below for the "only animate on
+   the first load of a session" behavior site.js layers on top of this.
+   Slowed to 2.2s (half speed of the original 1.1s) per an explicit
+   request. A plain keyframe animation with no `infinite` only ever plays
+   once per element, so this doesn't retrigger when the Lottie sequencer
+   swaps clips inside .gorilla-lottie afterward — that's a separate element
+   this animation never touches. */
+.gorilla-page .gorilla-wrap .gorilla-reveal-mask {
+  position: absolute;
+  top: -90%; left: -30%;
+  /* Left-only extension, not symmetric — a symmetric ±30% (160% total
+     width) was tried first, but that also pushed the mask's RIGHT edge
+     30% past the wrap's own right edge, and on desktop the wrap's "right"
+     offset (site.js's positionGorillaX, shared with every other page) is
+     itself sometimes negative at wide viewports — a deliberate bleed past
+     the browser's own right edge, ported from the Figma mockup and
+     already checked as safe for the un-masked artwork on Home/About/
+     Portfolio. Extending the mask that much further right on TOP of an
+     already-bled wrap let a later frame in the sequence (the shared
+     subtle-movement clip, not the talk/thinking clips the left-side fix
+     was calibrated against) actually paint past the true browser edge —
+     confirmed live at 1600px-wide viewports. The right side never needed
+     protecting in the first place (measured with real margin to spare,
+     see the left-side comment above), so the fix is to simply not extend
+     it: width 130%, not 160%. */
+  width: 130%;
+  height: 145%;
+  overflow: hidden;
+}
+
+.gorilla-page .gorilla-wrap .gorilla-body {
+  position: absolute;
+  top: calc(90% / 1.45); left: calc(30% / 1.3);
+  width: calc(100% / 1.3);
+  height: calc(100% / 1.45);
+  animation: gorillaChestReveal 2.2s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* Repeat-visit case: site.js adds this class (see the sessionStorage check
+   there) whenever the reveal has already played once this session, so a
+   second load of this page — a reload, or navigating back to it — shows
+   him already in his resting position instead of replaying the rise-up
+   animation, per an explicit "only the first time this session" request.
+   Only cancels the animation; the resting visual position is identical to
+   the animation's own "to" state (translateY(0), i.e. no transform), so no
+   other property needs setting here. */
+.gorilla-page .gorilla-wrap .gorilla-body.no-entrance-anim {
+  animation: none;
+}
+
+@keyframes gorillaChestReveal {
+  from { transform: translateY(40%); }
+  to   { transform: translateY(0); }
+}
+
+/* .gorilla-wrap normally goes position:static on mobile (see the
+   max-width:767px block below) — fine for every other page, but a static
+   element isn't a positioning context, so .gorilla-reveal-mask's
+   position:absolute would resolve against a further-out ancestor instead
+   and lose its crop alignment. position:relative behaves exactly like
+   static for .gorilla-wrap's own layout PROVIDED no offsets are set on it
+   — which turned out not to be a safe assumption: site.js's positionGorillaY
+   runs unconditionally on load (only the resize *listener* is gated), so it
+   always writes an inline top/right (desktop's absolute-position values)
+   onto .gorilla-wrap regardless of viewport width. On every other page that
+   inline style is inert at this breakpoint because position:static ignores
+   top/right entirely — but position:relative, unlike static, DOES honor
+   them, so on this page specifically those same inline values were
+   shifting the box off its normal in-flow mobile position (confirmed live:
+   position landed well down the page with a shrunken width, both visibly
+   wrong and not matching Home/About/Portfolio's own mobile size). Forcing
+   all four offsets to auto here — !important, since an inline style would
+   otherwise always beat a plain stylesheet rule — neutralizes site.js's
+   values the same way position:static already does on every other page,
+   restoring the "behaves exactly like static" guarantee the comment above
+   always intended. */
+/* max-width:768px, not 767 — matches the base ".gorilla-wrap
+   { position:static; width:min(70vw,320px); ... }" mobile switch (see the
+   comment on the .gorilla-page .inner rule above for the same reasoning).
+   Getting this off by one px turned out to be a real, reproducible bug,
+   not just a theoretical mismatch: at exactly 768px width the base rule
+   already puts .gorilla-wrap into static/in-flow layout, but before this
+   was widened to 768 this override — the one that keeps .gorilla-wrap a
+   positioning context for .gorilla-reveal-mask/.gorilla-body and
+   neutralizes site.js's desktop-oriented inline top/right values — only
+   started at 767px. At 768px specifically, .gorilla-wrap stayed
+   position:static (not a positioning context at all), so the mask/body
+   absolutely-positioned pair skipped past it to the next positioned
+   ancestor up the tree instead — completely breaking the crop and
+   rendering the character at the wrong size and position, confirmed live
+   via screenshot (a many-times-oversized, off-position render, not merely
+   a few px of extra clipping). */
+@media (max-width: 768px) {
+  .gorilla-page .gorilla-wrap {
+    position: relative;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    /* Mobile half of the "enlarge by 50%" request below. A first attempt
+       used min(94vw,480px) with the shared base's centered layout
+       (.page's default justify-content:center) — that stayed inside the
+       viewport for the box itself, but not for what actually PAINTS: the
+       real content clips against the viewport's own left edge (body's
+       overflow-x:hidden — a separate clip from .gorilla-reveal-mask's own
+       overflow:hidden, and one widening the mask can't help with at all),
+       confirmed live via screenshot, because the thought bubble's 1.5x-
+       scaled overshoot (measured ~18.2% of the wrap's own width, same
+       root cause as the mask fix above, just horizontal instead of
+       vertical) eats into whatever margin centering happens to leave on
+       the left — and a centered box this close to full-width leaves next
+       to none.
+       Fixed two ways together: shrunk to min(80vw,480px) (still bigger
+       than the un-enlarged 70vw everywhere, just not the full 94vw), and
+       — see .gorilla-page below — switched from centered to right-
+       anchored, which was already how this page's own desktop layout
+       works (site.js's "right" positioning). Right-anchoring puts ALL of
+       the leftover horizontal space on the LEFT side, exactly where the
+       overshoot needs it, instead of splitting it evenly with a right
+       side that never needed any. Verified live across the full mobile
+       width range (320-768px) with no clipping on either edge. */
+    width: min(72vw, 480px);
+  }
+}
+
+/* Right-anchors the Gorilla page's mobile row instead of the base .page's
+   centered layout — see the width comment on .gorilla-wrap just above for
+   why. Scoped to .gorilla-page only (this class lives on .page itself, not
+   a descendant), so Home/About/Portfolio's own mobile centering is
+   untouched. */
+@media (max-width: 768px) {
+  .gorilla-page {
+    justify-content: flex-end;
+  }
+}
+
+/* Overrides (not just companions to — see below) the shared
+   margin-top:150px rule further down (.portfolio-page/.gorilla-page,
+   untouched, still governs Portfolio) with a Gorilla-page-only formula.
+   150px was sized for the un-enlarged 320px-wide mobile box; at the
+   enlarged size above, the thought bubble's own overshoot (the same
+   ~43.1%-of-height worst case used for the mask fix earlier — this is the
+   in-flow-layout equivalent of that same clearance problem, not a new
+   one) grows past a flat 150px on anything but the smallest phones,
+   overlapping the nav — confirmed live via screenshot at 768px width
+   (150px left only -81px of clearance, i.e. solidly behind the nav).
+   Scaled off the box's own width (0.4817 * height-equivalent-in-width +
+   24px buffer, mirroring the desktop hardFloor's own +24 buffer) instead
+   of a flat number so it stays exactly as generous as it needs to be at
+   every mobile width rather than either under-protecting small phones or
+   over-spacing them for a worst case they'll never reach. Same selector
+   and specificity as the shared 767px rule below, but declared after it
+   in the file, so this wins for gorilla-page at every mobile width
+   (0-768px) — not just the 768px edge case — without touching Portfolio's
+   own rule at all. */
+@media (max-width: 768px) {
+  .gorilla-page .gorilla-wrap {
+    margin-top: calc(0.4817 * min(72vw, 480px) + 24px);
+  }
+}
+
+.gorilla-placeholder {
+  border: 1px dashed rgba(61,255,160,0.35);
+  border-radius: 12px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 12px;
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(10px, 1vw, 13px); letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(61,255,160,0.35);
+  text-align: center;
+}
+
+/* Animations */
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.company-item:nth-child(1) { animation: fadeUp 0.6s ease 0.5s both; }
+.company-item:nth-child(2) { animation: fadeUp 0.6s ease 0.6s both; }
+.company-item:nth-child(3) { animation: fadeUp 0.6s ease 0.7s both; }
+.company-item:nth-child(4) { animation: fadeUp 0.6s ease 0.8s both; }
+.company-item:nth-child(5) { animation: fadeUp 0.6s ease 0.9s both; }
+.email-btn { animation: fadeUp 0.7s ease 1.1s both; }
+
+/* About page */
+/* Home's heading isn't top-aligned — .page centers its content vertically,
+   so "JEFFREY PERONA BOYCE" lands whereever a short name block, centered
+   in the available space, happens to fall. About's content is a lot
+   taller (a heading plus three paragraphs of body copy, more so now that
+   the copy is 50% bigger), so centering IT would land "Hello!" somewhere
+   completely different — which is exactly the mismatch this fixes.
+   Matching that position exactly across any viewport height would need
+   the same kind of live-measurement approach used for the year spine
+   elsewhere on this site; instead this pins About to the specific pixel
+   offset (130px page padding + Home's own centering offset) that Home's
+   heading currently renders at on a typical desktop viewport, and stops
+   centering About's own content so its height can't shift that offset. */
+.about-page { align-items: flex-start; padding-top: 245px; padding-bottom: 120px; }
+
+/* All three pages now position their gorilla the same way — same markup
+   (a plain .gorilla-wrap; last child of the page's content container on
+   Home/About, first child on Portfolio — see .gorilla-wrap in
+   portfolio.html — since only Portfolio's mobile layout falls back to
+   normal document flow in a spot that isn't simply "at the end"),
+   same site.js positioning logic, and the same CSS here: absolute,
+   relative to .page's own box (.page is position:relative — see above),
+   not fixed to the viewport. That means the gorilla is part of the
+   normal document flow's positioning and scrolls away with the page's
+   content — per an explicit request for identical placement on all three
+   pages, plus a slower-than-content parallax scroll (see site.js) that
+   only makes sense once it's genuinely in-flow like this rather than
+   fixed to the viewport.
+   This used to be position:fixed specifically to stay resize-stable:
+   .page's height is flex:1-driven on a one-screen page, so it changes
+   with the viewport on resize, and a "bottom" value anchored to a
+   resizing box drifts on screen even though the CSS never changed.
+   site.js's positionGorillaY still only runs once per load (not on
+   resize) for the same reason as before — see the comment there — it
+   just now converts the viewport-relative measurement it makes into a
+   .page-relative offset before writing `top`, since that's what
+   position:absolute measures from.
+   Scoped to non-mobile widths — the mobile breakpoint below already
+   overrides .gorilla-wrap to position:static (it flows inline with the
+   content there instead of being anchored to a corner at all), and this
+   selector's extra specificity would otherwise beat that override. */
+@media (min-width: 769px) {
+  .gorilla-wrap { position: absolute; }
+}
+
+/* 100px margin — see .site-nav-inner above for the Variant A rationale. */
+.about-inner { display: block; max-width: 1200px; width: 100%; padding: 0 100px; }
+
+.hello-heading {
+  font-family: 'Staatliches', sans-serif; font-weight: 400;
+  font-size: clamp(96px, 12vw, 172px); letter-spacing: -0.01em;
+  color: var(--green); text-transform: uppercase; line-height: 0.9;
+  text-shadow: 0 0 80px rgba(61,255,160,0.15), 0 2px 0 rgba(0,0,0,0.5);
+  opacity: 0;
+  animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  position: relative; z-index: 20;
+  padding-bottom: 100px;
+}
+
+.bio-text {
+  font-family: 'Google Sans Flex', 'Archivo Narrow', sans-serif; font-weight: 400;
+  /* line-height keeps the same ratio as the original 12pt/22pt pairing
+     (~1.833x) so readability stays consistent at this size. Font-size and
+     line-height are both scaled to 80% of their original values (14pt/
+     25.7pt) per an explicit request to shrink the body copy. */
+  font-size: 11.2pt; line-height: 20.56pt;
+  /* 566px — matches the Portfolio page's case-study copy column width
+     (Figma "Variant A" 's COPY_TARGET_W) so About's body copy reads at the
+     same measure as the rest of the site instead of its own wider 680px. */
+  color: #FFF; max-width: 566px;
+  margin-top: 28px;
+  opacity: 0;
+  animation: fadeUp 0.7s ease both;
+  position: relative; z-index: 20;
+}
+
+.bio-text + .bio-text { margin-top: 20px; }
+
+.bio-text:nth-of-type(1) { animation-delay: 0.4s; }
+.bio-text:nth-of-type(2) { animation-delay: 0.5s; }
+.bio-text:nth-of-type(3) { animation-delay: 0.6s; }
+
+/* Photo collage at the bottom of the About page. A CSS grid with
+   grid-auto-flow:dense rather than a uniform 1:1 thumbnail row — each
+   photo keeps a deliberately different footprint (tall, wide, big square,
+   small) so it reads as a scrapbook/collage instead of a rigid gallery
+   grid, while dense packing still lets the browser backfill gaps left by
+   the taller/wider items automatically regardless of DOM order. */
+.about-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 130px;
+  grid-auto-flow: dense;
+  gap: 20px;
+  width: 100%;
+  margin-top: 80px;
+}
+
+.about-gallery-item {
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  opacity: 0;
+  animation: fadeUp 0.7s ease both;
+}
+.about-gallery-item img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.about-gallery-item.g-brown-belt   { grid-column: span 1; grid-row: span 3; animation-delay: 0.7s; }
+.about-gallery-item.g-ando         { grid-column: span 1; grid-row: span 3; animation-delay: 0.76s; }
+.about-gallery-item.g-kyoto        { grid-column: span 3; grid-row: span 3; animation-delay: 0.82s; }
+.about-gallery-item.g-bamboo-forest{ grid-column: span 2; grid-row: span 3; animation-delay: 0.88s; }
+.about-gallery-item.g-glass-beach  { grid-column: span 2; grid-row: span 3; animation-delay: 0.94s; }
+.about-gallery-item.g-sushi        { grid-column: span 2; grid-row: span 2; animation-delay: 1.0s; }
+.about-gallery-item.g-tomamu-cows  { grid-column: span 2; grid-row: span 2; animation-delay: 1.06s; }
+.about-gallery-item.g-tomamu       { grid-column: span 1; grid-row: span 2; animation-delay: 1.12s; }
+
+/* Portfolio page */
+.portfolio-page { display: block; padding-bottom: 0; }
+
+.portfolio-inner {
+  /* 100px margin — see .site-nav-inner above for the Variant A rationale. */
+  max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 100px;
+  display: flex; flex-direction: column;
+}
+
+/* Media column and gap set to Figma "Variant A / Spacious Reading"'s
+   actual values, ported directly rather than scaled: gutter = 48px, media
+   column = 386px (Variant A's IMAGE_TARGET_W, 385.9 rounded). The text
+   column is "1fr" and isn't set directly — at this page's 1200px max-width
+   with 100px margins, content width is 1000px, so 1000 - 386 - 48 = 566px,
+   which lands almost exactly on Variant A's own COPY_TARGET_W (566.1px) —
+   confirming the two fixed columns plus this page's existing max-width
+   reproduce Variant A's copy/image split without needing to set the text
+   column's width explicitly. */
+/* align-items:center (was start) so each case study's copy column is
+   vertically centered against its graphic instead of top-aligned — per an
+   explicit request. "Gemini on Glasses" (.no-media) has no second column
+   to center against, so this has no visible effect there either way; no
+   separate exception rule is needed. */
+.case-study {
+  display: grid; grid-template-columns: 386px 1fr;
+  gap: 48px; align-items: center;
+  padding: 96px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+  /* Text renders above the gorilla wherever they overlap. */
+  position: relative; z-index: 20;
+  /* Lets the scroll-arrow's click handler use scrollIntoView() and still
+     clear the fixed nav (50-130px) instead of tucking the section's top
+     underneath it. */
+  scroll-margin-top: 130px;
+}
+
+/* 120px below the fixed nav's bottom edge: .page's own padding-top (130px)
+   already clears the nav exactly, so this adds the remaining 120px on top
+   of that. The year spine tracks this automatically — portfolio.js
+   measures this title's live top edge and positions the spine against it
+   (minus a small buffer), so moving this value moves both together and
+   keeps them top-aligned without touching portfolio.js. */
+/* :first-of-type, not :first-child — .gorilla-wrap now sits ahead of every
+   case study in the markup (mobile places it first in document order; see
+   .gorilla-wrap in portfolio.html), so the first .case-study is no longer
+   .portfolio-inner's literal first child. :first-of-type matches on the
+   shared <section> tag instead, same fix already applied to
+   .case-study:last-of-type below for the same reason. */
+.case-study:first-of-type { padding-top: 120px; }
+/* :last-of-type, not :last-child — .portfolio-inner's actual last child is
+   .gorilla-wrap (plus its inline <script>), both siblings added after the
+   case-study sections, so :last-child never matched the real last case
+   study and its border-bottom was rendering as a stray line below "YouTube
+   Go". :last-of-type matches on the shared <section> tag instead, so it
+   still finds the last case study correctly regardless of what non-section
+   elements come after it. */
+.case-study:last-of-type { border-bottom: none; padding-bottom: 100px; }
+
+/* Only one grid column since this card has no .case-media — but without a
+   width cap that column stretches to fill the full 1000px content area
+   (capped only by .case-text's own generic 800px max-width), noticeably
+   wider than every other case study's 566px copy column. The 566px cap
+   that fixes that lives in the >=769px media query block further down
+   (with the rest of this page's desktop-only sizing), not here — every
+   case study collapses to a single full-width column on mobile anyway (see
+   the max-width:768px block at the end of this file), so a cap meant for
+   the desktop two-column comparison shouldn't carry over and needlessly
+   narrow the mobile layout too.
+   (The gorilla used to live nested inside this specific card — it's now a
+   plain top-of-page element shared with Home/About instead, positioned by
+   site.js like every other page; see .gorilla-wrap in styles.css.) */
+.case-study.no-media {
+  grid-template-columns: 1fr;
+}
+/* Grid auto-placement assigns cells in order-modified document order, so
+   using `order` alone to flip media/text visually also flips which column
+   (340px vs 1fr) each one lands in — that was blowing the media image up
+   to ~2x its native size in the wide column. Pin both the column widths
+   and each item's explicit grid-column instead, so the media column is
+   always 340px regardless of which side it's visually on. */
+.case-study.media-right {
+  grid-template-columns: 1fr 386px;
+}
+.case-study.media-right .case-media { grid-column: 2; grid-row: 1; }
+.case-study.media-right .case-text { grid-column: 1; grid-row: 1; }
+
+/* Case-study intro: each card slides + fades in as it scrolls into view,
+   the same slideLeft/slideRight/opacity treatment Home and About use for
+   their two columns — the column on the left converges in from further
+   left, the column on the right from further right. portfolio.html bakes
+   in "pre-reveal" (hiding it) directly in the markup; portfolio.js swaps
+   it for "in-view" (via IntersectionObserver) once per card.
+
+   Fill-mode is "both", not just "forwards": each rule below has an
+   animation-delay (0.05s/0.15s), and with only "forwards" the element
+   sits at its un-animated style (full opacity, no offset) for that whole
+   delay before snapping to the keyframe's "from" state when the delay
+   ends — a visible flash-then-jump right as the card was supposed to be
+   fading in. "both" makes it hold the "from" state through the delay too,
+   so there's nothing to snap from. */
+.case-study.pre-reveal .case-media,
+.case-study.pre-reveal .case-text {
+  opacity: 0;
+}
+
+.case-study.in-view .case-media {
+  animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+}
+.case-study.in-view .case-text {
+  animation: slideRight 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+}
+.case-study.media-right.in-view .case-media {
+  animation: slideRight 0.9s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+}
+.case-study.media-right.in-view .case-text {
+  animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+}
+.case-study.no-media.in-view .case-text {
+  animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+}
+
+/* border-radius scaled up 20px -> 23px (x1.158, the same ratio Variant A
+   grew the graphic column by: 333.33px -> 385.9px) so the frame's corner
+   rounding stays visually proportional to the now-wider media column. The
+   1px border is left alone — hairline strokes don't scale with the rest of
+   a design the way fills/typography do, so keeping it at 1px is what
+   actually reads as "the same weight" at the new size. */
+.case-media {
+  width: 100%; border-radius: 23px; overflow: hidden;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.case-media img { display: block; width: 100%; height: auto; }
+
+/* YouTube Go's case-media graphic (an animated GIF, not a static screenshot
+   like the other framed cards) keeps the shared card's background/radius/
+   clipping but drops just the hairline border — per an explicit request
+   scoped to this one instance, not a change to the shared .case-media look. */
+.case-media-no-border { border: none; }
+
+/* Text-to-speech design system graphic: the one case study whose graphic
+   isn't boxed in a framed card like every other .case-media — the 8 real
+   exported Figma components (src/tts-*.png — the actual "tts design
+   system loaded" frame's pieces, not a redraw) sit directly on the page
+   instead, so ".case-media-bare" strips the shared card's background/
+   border/radius/clipping back off just for this instance while still
+   letting ".case-media" handle this graphic's grid placement and
+   slide-in entrance exactly like every other case study's. */
+.case-media-bare {
+  background: none;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+/* Composites the 8 components as absolutely positioned images, each
+   placed as a percentage of the Figma "tts design system loaded" frame's
+   own 887x1102 size — and the composition itself is pinned to that same
+   887x1102 size (not scaled down to the 386px media column) so every PNG
+   renders at its true, un-stretched exported resolution. On any viewport
+   narrower than that, the composition simply spills past the media
+   column's right edge (".case-media-bare" above already sets
+   overflow:visible to allow it) rather than being scaled to fit.
+
+   Unlike every other .case-study's reveal (a one-time, un-reversed
+   slide-in driven by .case-study.in-view — see portfolio.js), this
+   composition is driven by its OWN IntersectionObserver
+   (".tts-composition" in portfolio.js) that keeps toggling "tts-in-view"
+   on and off as it crosses the same 35%-down-the-viewport line, in both
+   scroll directions. Scrolling down composes the 8 pieces into place at
+   full opacity; scrolling back up above that line separates them back out
+   to their scattered starting positions and 0% opacity, then it can
+   recompose again on the way back down. */
+.tts-composition {
+  position: relative;
+  width: 887px;
+  height: 1102px;
+}
+
+.tts-node {
+  position: absolute;
+  opacity: 0;
+  transition: left 0.9s cubic-bezier(0.16,1,0.3,1), top 0.9s cubic-bezier(0.16,1,0.3,1), opacity 0.9s cubic-bezier(0.16,1,0.3,1);
+  transition-delay: 0.15s;
+}
+/* No width/height here — each image renders at its own native exported
+   size (100% scale) rather than being stretched to fill a percentage-
+   sized box. Scoped under .tts-composition so this still outranks the
+   ".case-media img { height: auto }" rule above on specificity. */
+.tts-composition .tts-node img { display: block; }
+
+/* Each component gets a slightly later delay than the last so they compose
+   into place in roughly the order a person would notice them — top-left
+   cluster first, the voice list (the largest, most central piece) last —
+   rather than every node arriving in one flat, mechanical beat. Reversing
+   (scroll back up) uses the same per-node delays, so they also separate
+   back out in that same staggered order. */
+.tts-node-line-height        { left: 28.50%; top: 0%;      transition-delay: 0.15s; }
+.tts-node-player              { left: 32.47%; top: 25.74%;  transition-delay: 0.22s; }
+.tts-node-font-size           { left: 59.48%; top: 17.47%;  transition-delay: 0.29s; }
+.tts-node-content-highlighting{ left: 0.60%;  top: 67.86%;  transition-delay: 0.61s; }
+.tts-node-font-selection      { left: 80.14%; top: 52.73%;  transition-delay: 0.43s; }
+.tts-node-speed               { left: 0%;     top: 8.50%;   transition-delay: 0.50s; }
+.tts-node-speed-2             { left: 4.37%;  top: 56.55%;  transition-delay: 0.57s; }
+.tts-node-voice-selection     { left: 33.66%; top: 62.56%;  transition-delay: 0.64s; }
+
+.tts-composition.tts-in-view .tts-node { opacity: 1; }
+.tts-composition.tts-in-view .tts-node-line-height         { left: 27.85%; top: 0%; }
+.tts-composition.tts-in-view .tts-node-player              { left: 27.85%; top: 23.59%; }
+.tts-composition.tts-in-view .tts-node-font-size           { left: 54.00%; top: 14.88%; }
+.tts-composition.tts-in-view .tts-node-content-highlighting{ left: 1.58%;  top: 60.89%; }
+.tts-composition.tts-in-view .tts-node-font-selection       { left: 77.45%; top: 48.64%; }
+.tts-composition.tts-in-view .tts-node-speed                { left: 0%;     top: 4.45%; }
+.tts-composition.tts-in-view .tts-node-speed-2              { left: 1.58%;  top: 53.09%; }
+.tts-composition.tts-in-view .tts-node-voice-selection      { left: 29.20%; top: 56.44%; }
+
+/* All of .case-text's typography and internal spacing below is scaled by
+   0.85x — the same ratio Variant A's "Copy" frame was rescaled by in Figma
+   (666px -> 566px, i.e. node.rescale(0.85)), which scaled font sizes and
+   internal gaps right along with the frame's width. Applying that same
+   factor here keeps this page's copy column proportioned the way Variant A
+   actually specified it, rather than the narrower column from the last
+   change carrying the original (unscaled) type sizes and reading cramped.
+   Border/stroke widths (1px/2px) are the one exception — left unscaled for
+   the same hairline-crispness reason as .case-media's border above. */
+.case-text { display: flex; flex-direction: column; gap: 34px; max-width: 800px; }
+
+.case-title-block { display: flex; flex-direction: column; }
+
+.case-title {
+  font-family: 'Staatliches', sans-serif; font-weight: 400;
+  color: var(--green); line-height: 0.9;
+  display: flex; flex-direction: column;
+}
+
+.case-title .line1 { font-size: clamp(27.2px, 3.57vw, 68px); }
+.case-title .line2 {
+  font-size: clamp(44.2px, 6.205vw, 119px);
+  margin-top: -0.08em;
+}
+
+.case-role { margin-top: 17px; }
+
+.case-role-title,
+.case-role-sub {
+  font-family: 'Google Sans Flex', 'Archivo Narrow', sans-serif; font-weight: 500;
+  font-size: 13.6px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--white); line-height: 1.6;
+}
+
+.case-role-sub { opacity: 0.75; text-transform: none; letter-spacing: 0.02em; }
+
+.case-divider { width: 85px; height: 1px; background: rgba(255,255,255,0.2); }
+
+.case-desc {
+  font-family: 'Google Sans Flex', 'Archivo Narrow', sans-serif; font-weight: 400;
+  font-size: 17px; line-height: 28.9px; color: var(--white);
+}
+
+.case-results { display: flex; flex-direction: column; gap: 6.8px; }
+
+.case-results-label {
+  font-family: 'Google Sans Flex', 'Archivo Narrow', sans-serif; font-weight: 500;
+  font-size: 13.6px; letter-spacing: 0.07em; color: var(--green);
+  text-transform: uppercase;
+}
+
+.case-tags { display: flex; flex-wrap: wrap; gap: 10.2px; opacity: 0.75; }
+
+.case-tag {
+  border: 1px solid var(--white); border-radius: 6.8px;
+  padding: 3.4px 10.2px;
+  font-family: 'Google Sans Code', monospace; font-weight: 500;
+  font-size: 13.6px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--white);
+}
+
+/* Matched to .email-btn (Home's "Portfolio" CTA) exactly — same padding,
+   gap, border-radius, font-size, icon size, and hover treatment (the lift,
+   the glow, the expanding ring) — rather than the 0.85x-scaled-down
+   dimensions this button had as part of the Copy column's proportional
+   scaling. Buttons are a shared piece of UI chrome across the site, not
+   page-specific body copy, so per an explicit request this one now reads
+   as the same control everywhere instead of a smaller variant on
+   Portfolio. */
+.case-study-btn {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 18px 30px; border: 2px solid var(--green); border-radius: 100px;
+  background: transparent; color: var(--green); text-decoration: none;
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(12px, 1.3vw, 17px); letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer;
+  position: relative; overflow: hidden; width: fit-content;
+  transition: color 0.35s ease, box-shadow 0.35s ease, transform 0.2s ease;
+}
+
+.case-study-btn::before {
+  content: ''; position: absolute; inset: 0; background: var(--green);
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.76,0,0.24,1);
+  border-radius: 100px; z-index: 0;
+}
+
+.case-study-btn:hover::before { transform: scaleX(1); }
+/* No translateY lift on hover here (unlike .email-btn, which it otherwise
+   matches exactly) — per an explicit request that this button not move at
+   all on hover. Color/glow/ring still animate; only the position is held
+   still. */
+.case-study-btn:hover {
+  color: var(--black);
+  box-shadow: 0 0 40px var(--green-glow-strong), 0 0 80px var(--green-glow);
+}
+.case-study-btn:active { transform: scale(0.98); }
+
+.case-study-btn::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 100px;
+  border: 1px solid var(--green); opacity: 0; transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.5s ease;
+}
+.case-study-btn:hover::after { opacity: 0.35; transform: scale(1.04); }
+
+.case-study-btn svg {
+  width: 20px; height: 20px; flex-shrink: 0;
+  position: relative; z-index: 1; transition: transform 0.3s ease;
+}
+.case-study-btn:hover svg { transform: translate(2px, -2px); }
+.case-study-btn span { position: relative; z-index: 1; }
+
+/* "Case Study" replaced with this disabled placeholder across all six case
+   studies, per Figma node 424:11960 (Portfolio Website file) — while the
+   linked decks aren't ready yet. A separate class rather than a
+   .case-study-btn modifier on purpose: the two look nothing alike (white
+   outline vs. green fill-on-hover, wrench icon vs. arrow, faded 50%
+   opacity), and keeping them separate means swapping back later is just
+   changing the markup back, not unwinding a pile of disabled-state
+   overrides layered on top of the real button.
+   Deliberately a <button>, not an <a href>, and deliberately NOT using the
+   native `disabled` attribute — a disabled button doesn't fire click
+   events in any browser, and the "shake" feedback on click/tap (see
+   portfolio.js) needs that event to fire. aria-disabled="true" on the
+   element communicates the same non-interactive state to assistive tech
+   without losing the click. */
+.construction-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 18px 27px; border: 1.8px solid var(--white); border-radius: 100px;
+  background: transparent; color: var(--white);
+  font-family: 'Archivo Narrow', sans-serif; font-weight: 700;
+  font-size: clamp(12px, 1.3vw, 18.9px); letter-spacing: 0.1em;
+  text-transform: uppercase;
+  width: fit-content;
+  opacity: 0.5;
+  cursor: not-allowed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.construction-btn svg {
+  width: 24px; height: 24px; flex-shrink: 0;
+}
+
+/* Subtle "no" feedback when someone clicks/taps the disabled button — per
+   an explicit request. Small enough not to read as a glitch, but a
+   clearly deliberate side-to-side wobble rather than the click having no
+   effect at all. Re-triggered on every click via portfolio.js toggling
+   this class off (on animationend) and back on, since a CSS animation
+   already in its finished state doesn't restart just because the class
+   stays applied. */
+@keyframes constructionShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.construction-btn.is-shaking {
+  animation: constructionShake 0.4s ease;
+}
+
+/* Year spine: one persistent marker that carousels to the next year as the
+   user scrolls past a case study whose year differs from the last. Its
+   "top" is set inline by portfolio.js to line up with the top of "Gemini
+   on Glasses"'s title (measured live so it self-corrects to whatever fonts
+   actually render), minus the padding-top buffer below — 178px is just the
+   pre-JS fallback so there's no flash of the old centered position before
+   that runs.
+   overflow:hidden + a fixed height turn it into the carousel's viewport;
+   portfolio.js slides the outgoing/incoming year through it via
+   translateY transforms. The padding-top is headroom so a glyph's
+   ascender overshoot (common in fallback fonts) clips against that empty
+   padding instead of against the visible text itself — portfolio.js backs
+   the container off by the same amount so the text still visually lines
+   up with the title above it. */
+.year-spine {
+  position: fixed;
+  /* "left"/"top" are set live by portfolio.js — left is 160px out from
+     wherever .portfolio-inner's content actually starts (its own left
+     edge plus its padding), measured at runtime rather than approximated
+     with a vw-based formula, so it tracks the real edge at any window
+     width instead of drifting the way a fixed calc() would once the
+     content column stops scaling linearly with viewport width. These are
+     just the pre-JS fallback values for a typical desktop window.
+
+     Starts invisible: it only fades in once portfolio.js has positioned
+     it against final (post-font-load) layout, so there's nothing to
+     visibly jump on load the way there was when it could render briefly
+     at a stale position first. */
+  left: 16px; top: 172px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 15;
+  pointer-events: none;
+  overflow: hidden;
+  height: calc(1em + 6px);
+  /* Horizontal padding matches the top buffer: this box has no explicit
+     width (it shrinks to fit the digits), so without side padding the
+     glyphs would sit flush against its own clipping edges — fine normally,
+     but the carousel below briefly renders two years stacked in this same
+     box during a transition, and any edge-to-edge glyph can just barely
+     clip against overflow:hidden depending on font metrics. Matching
+     padding-right to padding-left (both 6px, same value as the top buffer)
+     keeps that clearance symmetric. portfolio.js compensates its "left"
+     math by this same 6px so the digits still land in the same visible
+     spot as before — only the invisible box around them grew. */
+  padding: 6px 6px 0;
+  box-sizing: content-box;
+  line-height: 1;
+}
+
+.year-spine-value {
+  display: block;
+  position: relative;
+  font-family: 'Staatliches', sans-serif; font-weight: 400;
+  font-size: 21px; letter-spacing: 0.03em;
+  line-height: 1;
+  color: #FFF;
+}
+
+/* Scroll cue: prompts the user down to the next case study. Fixed to the
+   viewport (not .page) for the same reason the spine and About's gorilla
+   are — "100px above the browser's bottom edge" needs to mean the actual
+   viewport edge, not wherever .page's box happens to end.
+   "left" is set live by portfolio.js, centered on the year spine's own
+   rendered midpoint (re-measured on resize/font-load, same reasoning as
+   the spine/gorilla positioning elsewhere) — 16px here is just the pre-JS
+   fallback, roughly under the spine's fallback position above.
+   Uses currentColor (like .case-study-btn's svg and the footer's email
+   icon) so the 50%-opacity idle / 100%-opacity hover states below are
+   just a color change, not a second asset. */
+.scroll-arrow {
+  position: fixed;
+  left: 16px;
+  bottom: 100px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  cursor: pointer;
+  transition: color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.scroll-arrow:hover,
+.scroll-arrow:focus-visible {
+  color: #FFF;
+  box-shadow: 0 0 24px rgba(255,255,255,0.15);
+}
+
+/* Plays once, the last thing to animate in on page load (see the delay in
+   portfolio.js — deliberately timed after the spine/case-study/gorilla
+   entrances so this reads as the final "and now scroll" cue rather than
+   competing with them). animationend in portfolio.js swaps this for
+   .scroll-arrow-visible so a later opacity *transition* (the scroll/click
+   dismiss) isn't fighting an still-in-effect `forwards` animation on the
+   same property. */
+.scroll-arrow.scroll-arrow-in {
+  animation: scrollArrowIn 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.scroll-arrow.scroll-arrow-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 0.4s ease, color 0.25s ease;
+}
+
+/* Set once — by scrolling past the first case study, or by clicking — and
+   never removed again this session (portfolio.js gates the whole
+   entrance on a sessionStorage flag once this fires). */
+.scroll-arrow.scroll-arrow-out {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+@keyframes scrollArrowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sizing below is now calibrated to TWO real Figma anchors instead of
+   one: a "1200px (768-1200 optimized)" mockup and a "1400px (1201px+
+   optimized)" mockup — replacing the earlier single-anchor pass, which
+   (it turned out) had been calibrated against the 1400px mockup's values
+   all along, just mislabeled as "1200px" at the time (both share the
+   exact same Figma node IDs).
+   Every non-chrome element in both mockups scales by a perfectly uniform
+   0.9x ratio (1200px-value = 0.9 x 1400px-value) — verified across 15+
+   distinct properties — so rather than solving two-point algebra per
+   property individually, each clamp() below is expressed as:
+     f(w) = 0.3V + 0.05V * vw
+   where V is that property's value at 1400px width. This single formula
+   lands on exactly 0.9V at w=1200 and exactly V at w=1400 by
+   construction, and keeps scaling in a straight line on both sides of
+   those two points. The floor (768px) is 0.684V and the cap is 1.2V,
+   placed at 1800px — a width past the last real mockup, chosen as a
+   reasonable extrapolation point rather than something the mockups
+   specify directly.
+   .nav-link / .footer-links / .footer-text / .site-nav-inner are the one
+   exception: their values were identical between the 1200px and 1400px
+   mockups (0.9x collapses to 1x, i.e. zero slope), so rather than write
+   a clamp() that's mathematically flat anyway, they're set as plain
+   fixed values below.
+   This block is placed here — after every base rule it overrides — on
+   purpose: a media-scoped rule and its unconditional base rule share the
+   same specificity, so when both apply (viewport >= 769px), normal
+   cascade order (last one wins) decides, not the media query. Anywhere
+   earlier in the file, a later base rule for the same selector (e.g.
+   .case-title .line1 further down) would silently win back over this. */
+@media (min-width: 769px) {
+  .nav-link { font-size: 16px; letter-spacing: 0.1em; }
+  /* 80% of the flat 20px/16px nav/footer values above — footer text only,
+     per an explicit request to scale down just the footer. */
+  .footer-links { font-size: 16px; letter-spacing: 0.1em; }
+  .site-nav-inner { gap: 50px; }
+  .footer-text { font-size: 12.8px; letter-spacing: 0.1em; }
+
+  .name-part,
+  .hello-heading { font-size: clamp(95.76px, calc(42px + 7vw), 168px); }
+
+  .role-title { font-size: clamp(27.36px, calc(12px + 2vw), 48px); letter-spacing: 0.1em; }
+  .company-item { font-size: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px); letter-spacing: 0.1em; }
+
+  .email-btn {
+    font-size: clamp(13.68px, calc(6px + 1vw), 24px);
+    padding: clamp(8.21px, calc(3.6px + 0.6vw), 14.4px) clamp(21.89px, calc(9.6px + 1.6vw), 38.4px);
+    gap: clamp(5.47px, calc(2.4px + 0.4vw), 9.6px);
+  }
+  .email-icon { width: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px); height: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px); }
+
+  /* line-height is a unitless ratio (44/24 in the mockup) rather than a
+     separate clamped value, so it keeps scaling in lockstep with
+     font-size automatically instead of needing its own cap. Font-size is
+     scaled to 80% of its prior fluid range per an explicit request to
+     shrink the body copy. */
+  /* Cap lowered 23.04px -> 18.432px (x0.8) per an explicit request to limit
+     the body copy's maximum font size to 80% of what it was — the floor
+     and vw slope are untouched, so this only clips how large the text can
+     grow on very wide viewports; it reads identically to before up until
+     the point the old formula would have exceeded this new cap. */
+  .bio-text { font-size: clamp(13.136px, calc(5.76px + 0.96vw), 18.432px); line-height: 1.833; }
+
+  /* Case-study clamp()s below are the base rules' V-anchored formulas
+     (see the big comment above this block) each multiplied straight
+     through by 0.85 — floor, calc() offset, vw coefficient, and cap all
+     scaled together — which is mathematically identical to first solving
+     the original two-Figma-mockup formula and then applying Variant A's
+     0.85x copy-scale on top of it. Kept as its own pass rather than
+     re-deriving from a hypothetical "Variant A mockup at 1400px" so it
+     stays traceably tied to the values already verified against the real
+     1200/1400 mockups above. */
+  .case-title .line1 { font-size: clamp(46.512px, calc(20.4px + 3.4vw), 81.6px); }
+  .case-title .line2 { font-size: clamp(81.396px, calc(35.7px + 5.95vw), 142.8px); }
+
+  /* Matches .email-btn's own >=769px override above exactly (border-radius
+     isn't included here for the same reason it isn't there: .email-btn
+     never scales it, so .case-study-btn's flat 100px from the base rule
+     already matches at every width). */
+  .case-study-btn {
+    font-size: clamp(13.68px, calc(6px + 1vw), 24px);
+    padding: clamp(8.21px, calc(3.6px + 0.6vw), 14.4px) clamp(21.89px, calc(9.6px + 1.6vw), 38.4px);
+    gap: clamp(5.47px, calc(2.4px + 0.4vw), 9.6px);
+  }
+  .case-study-btn svg {
+    width: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px); height: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px);
+  }
+
+  .case-divider { width: clamp(58.14px, calc(25.5px + 4.25vw), 102px); }
+
+  .case-role-title,
+  .case-role-sub { font-size: clamp(9.299px, calc(4.08px + 0.68vw), 16.32px); }
+
+  .case-desc { font-size: clamp(11.628px, calc(5.1px + 0.85vw), 20.4px); }
+
+  .case-results-label { font-size: clamp(9.299px, calc(4.08px + 0.68vw), 16.32px); }
+
+  .case-tag {
+    font-size: clamp(9.299px, calc(4.08px + 0.68vw), 16.32px);
+    padding: clamp(2.329px, calc(1.02px + 0.17vw), 4.08px) clamp(6.979px, calc(3.06px + 0.51vw), 12.24px);
+    border-radius: clamp(4.65px, calc(2.04px + 0.34vw), 8.16px);
+  }
+
+  /* "Gemini on Glasses" (.no-media) has no side graphic, so its single grid
+     column would otherwise stretch to fill the full 1000px content area
+     (capped only by .case-text's generic 800px max-width) — visibly wider
+     than every other case study's 566px copy column. Desktop-only: mobile
+     already collapses every case study to one full-width column (see the
+     max-width:768px block below), so this cap shouldn't carry over and
+     needlessly narrow that layout too. */
+  .case-study.no-media .case-text {
+    max-width: 566px;
+  }
+}
+
+/* max-width:767px (not 768px) — per an explicit request to keep the year
+   spine and this scroll cue visible at exactly 768px. Both are already
+   positioned entirely via live measurement in portfolio.js (down to
+   self-hiding if there's genuinely no room left), so this display:none
+   only needs to cover widths narrower than that dynamic logic is designed
+   for — the true "go fully mobile" breakpoint stays 768px everywhere
+   else in this file. */
+@media (max-width: 767px) {
+  .scroll-arrow { display: none; }
+}
+
+@media (max-width: 768px) {
+  .page { padding: 130px 0 32px; align-items: flex-start; }
+  .inner { grid-template-columns: 1fr; padding: 0 28px; gap: 32px; }
+  .name-block { line-height: 0.85; }
+  .site-nav-inner { padding: 0 28px; gap: 24px; }
+  .footer-bar {
+    margin-top: 48px;
+    padding-bottom: 40px;
+  }
+  .footer-inner { padding: 0 28px; }
+  .gorilla-wrap {
+    position: static;
+    margin: 24px auto 0;
+    width: min(70vw, 320px);
+    transform: none;
+    opacity: 1;
+    /* NOTE: overridden to a 150px margin-top on Portfolio/Gorilla below,
+       where .gorilla-wrap is the very first thing in the page's flow
+       (immediately after .page's own 130px nav-clearance padding) — see
+       .portfolio-page .gorilla-wrap / .gorilla-page .gorilla-wrap further
+       down. Left at 24px here since it's the general rule for Home/About,
+       where the gorilla sits well down the page rather than right below
+       the nav, so "distance from the navbar" doesn't apply the same way. */
+    animation: none;
+  }
+  .about-inner { padding: 0 28px; }
+  .bio-text { font-size: 13.6px; line-height: 1.6; max-width: none; }
+
+  /* Same varied-footprint collage, just re-flowed onto 2 columns and a
+     shorter row unit. Most spans above are already <=2 and carry over
+     as-is, but g-kyoto's desktop-only span-3 has to be clamped to the
+     2-column grid here or it overflows/breaks placement. */
+  .about-gallery {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 110px;
+    gap: 14px;
+    margin-top: 48px;
+  }
+  .about-gallery-item { border-radius: 20px; }
+  .about-gallery-item.g-kyoto { grid-column: span 2; }
+
+  .case-study,
+  .case-study.no-media,
+  .case-study.media-right {
+    grid-template-columns: 1fr; gap: 32px; padding: 56px 0;
+  }
+  .case-study.media-right .case-media { order: 0; grid-column: auto; grid-row: auto; }
+  .case-study.media-right .case-text { order: 1; grid-column: auto; grid-row: auto; }
+  .case-text { gap: 28px; }
+  .case-desc { font-size: 17px; line-height: 28px; }
+}
+
+/* .portfolio-inner's own padding collapse is split out to the max-width:767px
+   block below (not this one) — per the same explicit request as .scroll-arrow
+   further down: keeping the desktop 100px side padding through exactly
+   768px leaves portfolio.js's year-spine math enough room to stay visible
+   there too, while the case-study grid above still collapses to a single
+   column at that same 768px width, so the (now wider) column doesn't look
+   out of place. */
+
+/* Split out from the max-width:768px block above and dropped to 767px —
+   per the same explicit request as .scroll-arrow above — so the year
+   spine stays visible at exactly 768px, where portfolio.js's own live
+   positioning (including its self-hide-if-no-room fallback) takes over
+   instead of this hard display:none. Each card's date line still carries
+   the year as a fallback below 768px, where there's genuinely no room
+   for a side rail. */
+@media (max-width: 767px) {
+  .year-spine { display: none; }
+  .portfolio-inner { padding: 0 28px; }
+}
+
+/* gorilla.html's own ".inner" is meant to be a zero-height, purely-for-
+   measurement placeholder (see the comment on it in gorilla.html) — on
+   every other page .gorilla-wrap sits nested INSIDE its content container
+   (.inner/.about-inner/.portfolio-inner), but on the Gorilla page it's a
+   literal sibling of .inner, both direct children of .page. That's inert
+   on desktop (.page's flex layout there just centers .gorilla-wrap, since
+   .inner has zero height and site.js positions .gorilla-wrap with
+   position:absolute regardless of flex), but .page goes plain
+   `display:flex` in a ROW at this breakpoint too, and .inner's base rule
+   (".inner { ... width: 100%; ...}", never overridden by mobile's own
+   ".inner" rule above, which only touches grid-template-columns/padding/
+   gap) still asks for the full container width as a flex item there. With
+   .gorilla-wrap now also static/in-flow at this width (see the .gorilla-wrap
+   rule below) rather than position:absolute, both items become genuine
+   competing flex siblings — .inner's 100%-wide request forces flex-shrink
+   to kick in on BOTH items, visibly shrinking .gorilla-wrap well below its
+   own intended min(70vw,320px) size (confirmed live: 144px instead of the
+   262.5px Home/About/Portfolio's own gorilla renders at, at a 375px
+   viewport) — the mismatch this fixes. Pinning .inner to a hard zero here
+   removes it from the flex-shrink competition entirely, so .gorilla-wrap
+   gets the full row to itself again, matching every other page. site.js
+   still reads this element's live rect for its (desktop-only) horizontal
+   math — untouched, since that math's result is already forced back to
+   `right: auto` at this same breakpoint (see the position:relative rule
+   further below), so this element being visually zero-size here doesn't
+   feed into anything that still matters at mobile widths. */
+/* max-width:768px, not 767 — the base ".gorilla-wrap { position:static;
+   width:min(70vw,320px); ... }" mobile override this is compensating for
+   (see the comment above it) itself switches at max-width:768px, and this
+   needs to match that exactly or there's a 1px-wide gap at precisely
+   768px where .inner's zeroing doesn't apply yet but the static/in-flow
+   gorilla-wrap already does — reproduced live as a real bug (see the
+   position:relative rule below for the matching, more serious instance of
+   this same off-by-one). */
+@media (max-width: 768px) {
+  .gorilla-page .inner {
+    width: 0;
+    min-width: 0;
+    flex: 0 0 0;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+/* Portfolio and Gorilla are the two pages where .gorilla-wrap lands as the
+   very first thing in the page's mobile flow — right after .page's own
+   130px nav-clearance padding, which already lines its top edge up with
+   the navbar's own bottom edge (confirmed live: both measure 130px down
+   the viewport at this breakpoint). That makes this margin-top exactly
+   equal to the gap between the navbar and the gorilla, so setting it to
+   150px directly satisfies an explicit "150px below the navbar on mobile"
+   request, the same clearance amount already used site.js-side on desktop
+   (see GORILLA_NAV_CLEARANCE) — this is just the equivalent for the
+   static-flow mobile layout, where there's no "top" position to floor
+   against, only a margin ahead of it in-flow. Home/About are unaffected —
+   their gorilla sits well down the page instead, so the general 24px rule
+   above still governs there. */
+@media (max-width: 767px) {
+  .portfolio-page .gorilla-wrap,
+  .gorilla-page .gorilla-wrap {
+    margin-top: 150px;
+  }
+}
+
+/* Gorilla page's mobile enlarge override used to live here too — removed
+   for the same reason as the desktop override above, so mobile also just
+   inherits the shared base ".gorilla-wrap { position: static; ... width:
+   min(70vw, 320px); ... }" rule from the max-width:768px block, matching
+   Home/About/Portfolio exactly. */
+
+/* Case study overlay — per an explicit request to open each "Case Study"
+   button's Figma deck in an on-page overlay instead of a new tab. Hidden
+   via display:none (not just opacity) while closed so it's fully out of
+   the layout/tab order; portfolio.js toggles .is-open, which this file
+   then animates in with a fade + scale. z-index is comfortably above
+   every other fixed element on this page (the nav is the highest of
+   those, at z-index:190 — see .site-nav above) so it always sits on top
+   regardless of scroll position. */
+.case-study-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+}
+
+.case-study-overlay.is-open {
+  display: block;
+}
+
+.case-study-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.case-study-overlay.is-open .case-study-overlay-backdrop {
+  opacity: 1;
+}
+
+.case-study-overlay-panel {
+  position: absolute;
+  inset: 40px;
+  background: #111;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+
+.case-study-overlay.is-open .case-study-overlay-panel {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.case-study-overlay-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #111;
+}
+
+.case-study-overlay-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.55);
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.case-study-overlay-close:hover,
+.case-study-overlay-close:focus-visible {
+  background: rgba(0,0,0,0.8);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* Mobile: full-bleed instead of a floating panel — a 40px inset on a
+   ~375-430px-wide screen would leave barely any room for the embedded
+   deck, and there's no surrounding page chrome left to imply "this is a
+   panel over something" at that size anyway. */
+@media (max-width: 767px) {
+  .case-study-overlay-panel {
+    inset: 0;
+    border-radius: 0;
+  }
+  .case-study-overlay-close {
+    top: 12px;
+    right: 12px;
+  }
+}

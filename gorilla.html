@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jeffrey Perona Boyce &mdash; Product Design</title>
+  <title>Gorilla &mdash; Jeffrey Perona Boyce</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,47 +18,35 @@
 
   <nav class="site-nav">
     <div class="site-nav-inner">
-      <a class="nav-link is-current" href="index.html">Home</a>
+      <a class="nav-link" href="index.html">Home</a>
       <a class="nav-link" href="about.html">About</a>
       <a class="nav-link" href="portfolio.html">Portfolio</a>
-      <a class="nav-link nav-link-hidden" href="gorilla.html">Gorilla</a>
+      <a class="nav-link is-current nav-link-hidden" href="gorilla.html">Gorilla</a>
     </div>
   </nav>
 
-  <div class="page">
-    <div class="inner">
+  <div class="page gorilla-page">
 
-      <div class="name-block">
-        <span class="name-part">Jeffrey</span>
-        <span class="name-part">Perona</span>
-        <span class="name-part">Boyce</span>
-      </div>
+    <!-- No visible text on this page for the gorilla to align to, but
+         site.js still needs the same 1200px-capped content column every
+         other page has to measure its horizontal position against —
+         zero height, nothing rendered, purely a reference for that. -->
+    <div class="inner" aria-hidden="true"></div>
 
-      <div class="info-panel">
-        <div class="title-block">
-          <h1 class="role-title">Product Design</h1>
+    <!-- .gorilla-reveal-mask/.gorilla-body: an on-load "rises up from the
+         bottom, chest-up only" reveal — per an explicit request scoped to
+         this page. .gorilla-wrap's own box (size/position) is left exactly
+         as every other page computes it, so site.js's positioning and
+         nav-clearance math needs no changes; the mask only crops what's
+         visually PAINTED inside that same box, and .gorilla-body restores
+         the full-height coordinate space inside the (shorter) mask so
+         .gorilla-lottie itself is completely unaware anything changed. See
+         styles.css for the sizing/animation. -->
+    <div class="gorilla-wrap" aria-hidden="true">
+      <div class="gorilla-reveal-mask">
+        <div class="gorilla-body">
+          <div class="gorilla-lottie" role="img" aria-label="A gorilla, sitting quietly. That's the whole page."></div>
         </div>
-
-        <div class="companies-block">
-          <div class="company-item">DeepMind Gemini</div>
-          <div class="company-item">Google Assistant</div>
-          <div class="company-item">Google</div>
-          <div class="company-item">YouTube</div>
-          <div class="company-item">Startups</div>
-        </div>
-
-        <div class="contact-block">
-          <a class="email-btn" href="portfolio.html">
-            <span class="email-text">Portfolio</span>
-            <svg class="email-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.175 13H4V11H16.175L10.575 5.4L12 4L20 12L12 20L10.575 18.6L16.175 13Z" fill="currentColor"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
-      <div class="gorilla-wrap" aria-hidden="true">
-        <div class="gorilla-lottie" aria-hidden="true"></div>
       </div>
     </div>
   </div>
@@ -78,7 +66,9 @@
     </div>
   </div>
 
-  <script src="src/json/gorilla-home.data.js"></script>
+  <script src="src/json/gorilla-talk-talk.data.js"></script>
+  <script src="src/json/gorilla-talk-thinking.data.js"></script>
+  <script src="src/json/gorilla-subtle-movement.data.js"></script>
   <script src="lottie.min.js"></script>
   <script src="site.js?v=1787512789"></script>
 
