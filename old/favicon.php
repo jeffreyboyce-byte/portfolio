@@ -1,0 +1,1 @@
+<link rel="icon" href="http://makilaban.com/images/favicon.ico" type="image/x-icon" />
