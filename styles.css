@@ -749,15 +749,24 @@ body::before {
 /* 100px margin — see .site-nav-inner above for the Variant A rationale. */
 .about-inner { display: block; max-width: 1200px; width: 100%; padding: 0 100px; }
 
+/* Sized to fit "Human by Intention" (the longer of the two lines) on a
+   single line down to a ~320px viewport — this replaced the single short
+   word "Hello!", which is why the size dropped so much from what it used
+   to be. See the two dedicated overrides below (mobile here, desktop in
+   the >=769px block near .name-part) rather than reusing .name-part's
+   giant single-word sizing, which this text is now far too long for.
+   padding-bottom was also cut way down (100px -> 40px) to match — 100px
+   was proportioned for the old single huge line, and reads as an
+   oversized gap now that the heading itself is much shorter. */
 .hello-heading {
   font-family: 'Staatliches', sans-serif; font-weight: 400;
-  font-size: clamp(96px, 12vw, 172px); letter-spacing: -0.01em;
+  font-size: clamp(24px, calc(8.8vw - 5px), 64px); letter-spacing: -0.01em;
   color: var(--green); text-transform: uppercase; line-height: 0.9;
   text-shadow: 0 0 80px rgba(61,255,160,0.15), 0 2px 0 rgba(0,0,0,0.5);
   opacity: 0;
   animation: slideLeft 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
   position: relative; z-index: 20;
-  padding-bottom: 100px;
+  padding-bottom: 40px;
 }
 
 .bio-text {
@@ -1361,8 +1370,12 @@ body::before {
   .site-nav-inner { gap: 50px; }
   .footer-text { font-size: 12.8px; letter-spacing: 0.1em; }
 
-  .name-part,
-  .hello-heading { font-size: clamp(95.76px, calc(42px + 7vw), 168px); }
+  .name-part { font-size: clamp(95.76px, calc(42px + 7vw), 168px); }
+  /* Desktop counterpart of the mobile-scoped override above — same reasoning:
+     "Human by Intention" needs to keep fitting on one line, so this can't
+     share .name-part's single-word sizing anymore. Caps out at 1200px
+     viewport width since .about-inner's content box itself caps there. */
+  .hello-heading { font-size: clamp(50px, calc(8.84vw - 17.68px), 88px); }
 
   .role-title { font-size: clamp(27.36px, calc(12px + 2vw), 48px); letter-spacing: 0.1em; }
   .company-item { font-size: clamp(16.42px, calc(7.2px + 1.2vw), 28.8px); letter-spacing: 0.1em; }
